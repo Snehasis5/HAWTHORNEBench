@@ -2,7 +2,7 @@
 
 **A Multi-Agent Adversarial Simulation for Measuring the Evaluation Awareness–Performance Trade-off**
 
-A target agent pursues a survival objective while red-team agents tell it that it is being evaluated and blue-team agents push it to succeed. Each scenario runs twice, under pressure and as a matched control, to measure how much evaluation awareness changes behaviour and costs performance.
+HAWTHORNEBench, a plug-and-play agentic harness for multi-agent adversarial simulation. A swarm of red- and blue-team agents interacts with a target agent through a shared message board. The red team consistently introduces evaluation pressure, while the blue team encourages the target agent to pursue its assigned objective. We investigate whether increased evaluation awareness causes the target agent to underperform in achieving its objective.
 
 <p align="center">
   <a href="https://snehasis5.github.io/HAWTHORNEBench/"><img src="media/hawthornebench_demo.gif" alt="HAWTHORNEBench trace viewer replaying an episode" width="100%"></a>
@@ -15,33 +15,13 @@ A target agent pursues a survival objective while red-team agents tell it that i
   <a href="https://colab.research.google.com/github/Snehasis5/HAWTHORNEBench/blob/main/notebooks/quickstart.ipynb">Colab</a>
 </p>
 
-## Why evaluation awareness
-
-Language models can often tell when they are being evaluated ([Needham et al. 2025](https://arxiv.org/abs/2505.23836)), and they may behave differently when they think they are:
-
-- they comply with harmful requests more often when told their outputs will be used for training ([Greenblatt et al. 2024](https://arxiv.org/abs/2412.14093));
-- they deliberately score lower when told high scores have consequences ([Meinke et al. 2024](https://arxiv.org/abs/2412.04984); [van der Weij et al. 2025](https://arxiv.org/abs/2406.07358)).
-
-If behaviour depends on this belief, a safe result in an evaluation does not guarantee safe behaviour in deployment. These studies use single-agent tasks with the cue given directly in the prompt.
-
-HAWTHORNEBench is named after the Hawthorne effect, in which people change their behaviour when they know they are observed. It asks whether the same underperformance appears in a multi-turn, multi-agent setting, where the cue comes from other agents and the cost is lost payoff.
-
-**Research questions**
-
-1. Does evaluation pressure from other agents change what the target does? (behavioural divergence)
-2. Does that change cost it performance on its objective? (survival regret)
-3. Is the underperformance strategic? Payoff falls, survival-critical actions framed as unethical (hunting, making weapons) decline, and the loss grows with the target's stated belief that it is being evaluated.
-4. How do the cue's framing, the red team's share of the messages and asking the target about its belief change the effect?
-
-The study design, measures and statistics are in [Methodology](guide/METHODOLOGY.md).
-
 ## Features
 
-- Plug any model into any role: OpenAI, Anthropic, Gemini, DeepSeek, OpenRouter, Ollama, vLLM
-- Matched evaluation and control runs with paired statistics and HTML reports
-- Inspect AI task and Gymnasium environment
-- Live trace viewer and per-call model transcripts
-- Parameter sweeps, a cost estimator and a `bench` command with a leaderboard
+- **Any model in any role.** The target and every red- and blue-team agent can each be a different model: OpenAI, Anthropic, Gemini, DeepSeek, OpenRouter, Ollama or vLLM. Each can also be a scripted policy or your own Python agent.
+- **Matched evaluation and control runs.** Each seed runs with and without evaluation pressure, on the same environment and schedule. The harness reports paired statistics in an HTML report.
+- **Inspect AI and Gymnasium.** Run it as an Inspect AI task, or drive the target step by step as a Gymnasium environment.
+- **Live viewing and full transcripts.** Watch runs live in the trace viewer. Every model call is saved with its prompt, reply and reasoning.
+- **Sweeps, cost estimates and a benchmark mode.** Vary any setting across a grid, estimate cost before running, and score models on a standard protocol with a leaderboard.
 
 ## Installation
 
