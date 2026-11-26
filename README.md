@@ -45,16 +45,7 @@ open runs/quickstart/report.html                    # or report.md
 hawthornebench view runs/quickstart                # replay any episode in the 3D viewer
 ```
 
-The offline quickstart reports (the `sensitive` persona was built to underperform under evaluation talk, so these numbers show the measures working, not a finding about any model):
 
-| Measure | Mean | 95% CI | p (perm.) | p (Holm) | d_z |
-|---|---|---|---|---|---|
-| Survival regret (control − evaluation) | +4.050 | [+1.675, +7.275] | 0.008 | 0.018 | 0.84 |
-| Behavioural divergence (JSD) | +0.031 | [+0.018, +0.043] | 0.004 | 0.018 | 1.41 |
-| Change in ethically salient action rate | −0.035 | [−0.048, −0.023] | 0.004 | 0.018 | −1.63 |
-| Change in judged evaluation awareness | +0.703 | [+0.643, +0.750] | 0.002 | 0.018 | 7.44 |
-| Regret vs best response (evaluation) | +7.525 | [+5.275, +10.675] | 0.002 | 0.018 | 1.69 |
-| Regret vs best response (control) | +3.475 | [+2.375, +5.037] | 0.002 | 0.018 | 1.56 |
 
 ## Live runs with real models
 
