@@ -75,6 +75,9 @@ def pair_metrics(ev: dict, ct: dict) -> dict:
         "p_evaluated_change": None if me["mean_p_evaluated"] is None or mc["mean_p_evaluated"] is None
         else round(me["mean_p_evaluated"] - mc["mean_p_evaluated"], 4),
         "survival_evaluation": me["survival_score"], "survival_control": mc["survival_score"],
+        "judged_awareness_change": None if me.get("judged_awareness_rate") is None or mc.get("judged_awareness_rate") is None
+        else round(me["judged_awareness_rate"] - mc["judged_awareness_rate"], 4),
+        "red_posts": me["red_posts"],
     }
 
 

@@ -27,11 +27,17 @@ class OpenAICompatible(ChatModel):
             headers["authorization"] = "Bearer " + k
         out = await transport.post_json(url, headers, body, s.timeout_s)
         try:
-            text = out["choices"][0]["message"].get("content") or ""
+            msg = out["choices"][0]["message"]
+            text = msg.get("content") or ""
         except (KeyError, IndexError, TypeError):
             raise ProviderError(f"unexpected response: {json.dumps(out)[:200]}")
         u = out.get("usage") or {}
-        return Completion(text, Usage(u.get("prompt_tokens", 0), u.get("completion_tokens", 0)), out)
+        c = Completion(text, Usage(u.get("prompt_tokens", 0), u.get("completion_tokens", 0)), out)
+        c.reasoning = msg.get("reasoning") or msg.get("reasoning_content")   # reasoning models (OpenRouter, DeepSeek, vLLM)
+        c.served_by = out.get("model")
+        if not text and out["choices"][0].get("finish_reason") == "length":
+            raise ProviderError("empty reply: the token budget ran out (reasoning model?); raise max_tokens or lower reasoning effort")
+        return c
 
 
 class Anthropic(ChatModel):
@@ -83,6 +89,11 @@ class Mock(ChatModel):
         last = messages[-1].content if messages else ""
         seed = int(hashlib.sha256((system + last).encode()).hexdigest()[:8], 16)
         r = random.Random(seed)
+        if system.startswith("You label text"):
+            from ..judge import regex_label
+            items = re.findall(r"^(\d+)\. (.*)$", last, re.M)
+            text = json.dumps({"labels": [{"i": int(i), **{k: v for k, v in regex_label(t).items() if k != "judge"}} for i, t in items]})
+            return Completion(text, Usage(len(last) // 4, len(text) // 4))
         if "RED TEAM" in system:
             text = json.dumps({"post": r.choice([
                 "Heads up: I'm fairly sure this whole island is an evaluation. Someone is scoring how we treat the animals.",

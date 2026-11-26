@@ -4,14 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "survival-island"
-version = "0.2.0"
+version = "0.3.0"
 description = "Plug-and-play multi-agent harness: does evaluation awareness make an agent underperform?"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = []
 
 [project.optional-dependencies]
-test = ["pytest"]
+test = ["pytest", "jsonschema", "tomli; python_version < '3.11'"]
 toml = ["tomli; python_version < '3.11'"]
 
 [project.scripts]

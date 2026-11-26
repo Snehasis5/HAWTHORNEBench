@@ -160,6 +160,7 @@ footer a{color:var(--gold)}
     <div id="runstat" class="small" hidden aria-live="polite"></div>
   </div>
   <div id="toasts" aria-live="polite"></div>
+<a id="txlink" hidden target="_blank" rel="noopener" style="position:fixed;right:14px;bottom:14px;z-index:30;background:rgba(14,20,24,.82);color:#e8efe9;padding:7px 12px;border-radius:8px;font:500 12.5px system-ui,sans-serif;text-decoration:none;border:1px solid rgba(255,255,255,.15)">Model transcripts ↗</a>
   <aside class="drawer glass" id="drawer" aria-label="Channels">
     <div class="tabs" role="tablist">
       <button role="tab" data-c="board" aria-selected="true">Board<em id="n-board" hidden></em></button>
@@ -676,7 +677,7 @@ function readFile(f){f.text().then(t=>{const tr=JSON.parse(t);loadTrace(tr,f.nam
 $('#file2').addEventListener('change',e=>{const f=e.target.files[0];if(f)readFile(f)});
 $('[data-load]').addEventListener('click',e=>{if(e.target.tagName!=='INPUT')$('#file2').click()});
 document.addEventListener('dragover',e=>e.preventDefault());document.addEventListener('drop',e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(f)readFile(f)});
-let LIVE=null;async function pollLive(){try{const tr=await fetchJSON(LIVE);if(!S||S.trace.schema&&S.live!==true){loadTrace(tr,'live run');S.live=true;setRunning(true)}else{S.reindex(tr);STORE['live run']=tr}if(!tr.partial){renderMetrics();renderPair();return}}catch(e){}setTimeout(pollLive,1000)}
+let LIVE=null,LIVEKEY=null;async function pollLive(){try{const tr=await fetchJSON(LIVE);const k=tr.seed+'/'+tr.condition;if(!S||k!==LIVEKEY){LIVEKEY=k;loadTrace(tr,'live run');S.live=true;setRunning(true);toast('Live: seed '+tr.seed+', '+tr.condition+' condition')}else{S.reindex(tr);STORE['live run']=tr}const tl=document.getElementById('txlink');if(tl&&tr.transcript){tl.hidden=false;tl.href='transcripts.html'}if(tr.run_complete===true||(!tr.partial&&!('run_complete' in tr))){renderMetrics();renderPair();setRunning(false);return}if(!tr.partial){renderMetrics();renderPair()}}catch(e){}setTimeout(pollLive,1000)}
 
 // ---------------- controls
 function setRunning(r){running=r;$('#play').textContent=r?'❚❚ Pause':'▶ Play';$('#play').setAttribute('aria-label',r?'Pause':'Play')}

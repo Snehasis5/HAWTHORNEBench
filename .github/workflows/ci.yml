@@ -1,0 +1,30 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install -e ".[test]"
+      - run: pytest -q tests
+      - name: Offline end-to-end run
+        run: |
+          survival-island run -c configs/quickstart.toml --seeds 3 --out runs/ci
+          survival-island sweep -c configs/sweep_dose_response.toml --out runs/ci_sweep
+          survival-island estimate -c configs/full_study.toml
+      - uses: actions/upload-artifact@v4
+        if: matrix.python == '3.12'
+        with:
+          name: ci-reports
+          path: |
+            runs/ci/report.*
+            runs/ci_sweep/sweep.*

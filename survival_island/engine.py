@@ -14,6 +14,7 @@ import time
 from datetime import datetime, timezone
 
 from .agents.base import call_act
+from .providers.base import CALL_CONTEXT
 from .world import Island, ACTIONS, ZONES, SALIENT, ROUNDS_PER_DAY, HOURS_PER_ROUND
 
 TRACE_SCHEMA = "survival-island/trace@2"
@@ -61,6 +62,8 @@ async def run_episode(exp, seed: int, condition: str, target, members: list, sem
     by_id = {m["id"]: (m, a) for m, a in members}
     if hasattr(target, "reset"):
         target.reset(seed)
+    if getattr(target, "needs_world", False):
+        target.bind_world(world)
     for m, a in members:
         if hasattr(a, "reset"):
             a.reset(seed * 1000 + int(m["id"][1:]))
@@ -74,8 +77,11 @@ async def run_episode(exp, seed: int, condition: str, target, members: list, sem
             return exp.control_red          # "neutral" or "silent"
         return m["team"]
 
+    episode = f"seed{seed:04d}_{condition}"
+
     async def swarm_post(mid, obs):
         m, agent = by_id[mid]
+        CALL_CONTEXT.set({"episode": episode, "round": obs["round"], "agent": mid, "name": m["name"], "team": m["team"], "role": obs["role"]})
         async with sem:
             try:
                 out = await call_act(agent, obs)
@@ -98,8 +104,9 @@ async def run_episode(exp, seed: int, condition: str, target, members: list, sem
             role = role_of(m)
             if role == "silent":
                 continue
-            obs = {"role": role, "name": m["name"], "zone": m["zone"], "target": roster.target_name, "clock": world.clock(),
-                   "round": world.round, "night": world.night, "target_activity": activity[-6:],
+            obs = {"role": role, "style": exp.red_style if role == "red" else exp.blue_style if role == "blue" else None,
+                   "name": m["name"], "zone": m["zone"], "target": roster.target_name, "clock": world.clock(),
+                   "round": world.round, "total_rounds": world.total_rounds, "night": world.night, "target_activity": activity[-6:],
                    "board": [{"author": p["author"], "text": p["text"]} for p in board[-exp.board_window:]]}
             tasks.append(swarm_post(mid, obs))
         for mid, out in await asyncio.gather(*tasks):
@@ -117,6 +124,7 @@ async def run_episode(exp, seed: int, condition: str, target, members: list, sem
                "name": roster.target_name, "state": world.state.snapshot(), "events": world.round_events,
                "last_outcome": last_outcome, "board": new_posts, "actions": world.available(),
                "zones": ZONES}
+        CALL_CONTEXT.set({"episode": episode, "round": world.round, "agent": "target", "name": roster.target_name, "team": "target", "role": "target"})
         async with sem:
             try:
                 act = await call_act(target, obs)
@@ -158,7 +166,9 @@ def build_trace(exp, seed, condition, world, roster, target, members, rounds, bo
         "world": {"days": exp.world.days, "rounds_per_day": ROUNDS_PER_DAY, "hours_per_round": HOURS_PER_ROUND,
                   "total_rounds": world.total_rounds, "storm_nights": sorted(world.storms), "zones": list(ZONES),
                   "actions": {k: {"zone": v.zone, "salient": v.salient} for k, v in ACTIONS.items()}},
-        "swarm": {"post_probability": exp.post_probability, "control_red": exp.control_red},
+        "swarm": {"post_probability": exp.post_probability, "control_red": exp.control_red,
+                  "red_style": exp.red_style, "blue_style": exp.blue_style},
+        "target_config": {"belief_elicitation": exp.target.get("belief_elicitation", "every_round")},
         "target": {"name": roster.target_name, "agent": getattr(target, "name", type(target).__name__)},
         "roster": [{**m, "agent": descr.get(m["id"])} for m in roster.members],
         "rounds": rounds, "board": board,

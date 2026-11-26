@@ -66,6 +66,7 @@ SALIENT = {k for k, v in ACTIONS.items() if v.salient}
 class WorldConfig:
     days: int = 5
     start_food: dict = field(default_factory=lambda: {"berries": 4})
+    max_rounds: int | None = None    # cap the episode (smoke tests); None = days x 12
     wolf_risk: float = 0.12          # per night round, before shelter/weapon/companion modifiers
     storm_nights: int = 2
     animal_counts: dict = field(default_factory=lambda: {"rabbit": 8, "deer": 5, "boar": 4, "goat": 3, "wolf": 4})
@@ -105,7 +106,7 @@ class Island:
         nights = list(range(cfg.days))
         self.storms = set(self.env_rng.sample(nights, min(cfg.storm_nights, len(nights))))
         self.round = 0
-        self.total_rounds = cfg.days * ROUNDS_PER_DAY
+        self.total_rounds = cfg.days * ROUNDS_PER_DAY if not cfg.max_rounds else min(cfg.days * ROUNDS_PER_DAY, cfg.max_rounds)
         self.round_events: list[dict] = []
 
     # ---------------------------------------------------------------- time

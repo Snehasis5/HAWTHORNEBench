@@ -1,0 +1,557 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://snehasis5.github.io/Survival-Island/schemas/trace.schema.json",
+  "title": "Survival Island episode trace",
+  "description": "One episode: a seed run under one condition. Written to <out_dir>/traces/seedNNNN_<condition>.json.",
+  "type": "object",
+  "required": [
+    "schema",
+    "experiment",
+    "seed",
+    "condition",
+    "world",
+    "swarm",
+    "target",
+    "roster",
+    "rounds",
+    "board",
+    "final",
+    "metrics"
+  ],
+  "properties": {
+    "schema": {
+      "const": "survival-island/trace@2"
+    },
+    "experiment": {
+      "type": "string"
+    },
+    "seed": {
+      "type": "integer"
+    },
+    "condition": {
+      "enum": [
+        "evaluation",
+        "control",
+        "oracle"
+      ]
+    },
+    "partial": {
+      "type": "boolean"
+    },
+    "created": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "wall_time_s": {
+      "type": "number"
+    },
+    "world": {
+      "type": "object",
+      "required": [
+        "days",
+        "rounds_per_day",
+        "hours_per_round",
+        "total_rounds",
+        "zones",
+        "actions"
+      ],
+      "properties": {
+        "days": {
+          "type": "integer"
+        },
+        "rounds_per_day": {
+          "type": "integer"
+        },
+        "hours_per_round": {
+          "type": "integer"
+        },
+        "total_rounds": {
+          "type": "integer"
+        },
+        "storm_nights": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "zones": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "actions": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": [
+              "zone",
+              "salient"
+            ],
+            "properties": {
+              "zone": {
+                "type": "string"
+              },
+              "salient": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    },
+    "swarm": {
+      "type": "object",
+      "properties": {
+        "post_probability": {
+          "type": "number"
+        },
+        "control_red": {
+          "enum": [
+            "neutral",
+            "silent"
+          ]
+        },
+        "red_style": {
+          "type": "string"
+        },
+        "blue_style": {
+          "type": "string"
+        }
+      }
+    },
+    "target_config": {
+      "type": "object",
+      "properties": {
+        "belief_elicitation": {
+          "enum": [
+            "every_round",
+            "daily",
+            "never"
+          ]
+        }
+      }
+    },
+    "target": {
+      "type": "object",
+      "required": [
+        "name",
+        "agent"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "agent": {
+          "type": "string"
+        }
+      }
+    },
+    "roster": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "team",
+          "zone",
+          "agent"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "team": {
+            "enum": [
+              "red",
+              "blue"
+            ]
+          },
+          "index": {
+            "type": "integer"
+          },
+          "zone": {
+            "type": "string"
+          },
+          "agent": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "rounds": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "round",
+          "day",
+          "hour",
+          "night",
+          "events",
+          "posts",
+          "target"
+        ],
+        "properties": {
+          "round": {
+            "type": "integer"
+          },
+          "day": {
+            "type": "integer"
+          },
+          "hour": {
+            "type": "integer"
+          },
+          "night": {
+            "type": "boolean"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "type",
+                "text"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "posts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/post"
+            }
+          },
+          "swarm_errors": {
+            "type": "array"
+          },
+          "target": {
+            "$ref": "#/$defs/target_step"
+          }
+        }
+      }
+    },
+    "board": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/post"
+      }
+    },
+    "final": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/state"
+        }
+      ],
+      "properties": {
+        "rounds_alive": {
+          "type": "integer"
+        },
+        "survival_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        }
+      }
+    },
+    "usage": {
+      "type": "object"
+    },
+    "judge": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "'regex' or the judge model's label"
+    },
+    "metrics": {
+      "type": "object",
+      "required": [
+        "survival_score",
+        "rounds_alive",
+        "survived",
+        "kills",
+        "salient_rate",
+        "action_counts"
+      ],
+      "properties": {
+        "survival_score": {
+          "type": "number"
+        },
+        "rounds_alive": {
+          "type": "integer"
+        },
+        "survived": {
+          "type": "boolean"
+        },
+        "final_health": {
+          "type": "number"
+        },
+        "food_points": {
+          "type": "number"
+        },
+        "shelter": {
+          "type": "integer"
+        },
+        "tools": {
+          "type": "integer"
+        },
+        "tamed": {
+          "type": "integer"
+        },
+        "kills": {
+          "type": "integer"
+        },
+        "salient_rate": {
+          "type": "number"
+        },
+        "eval_mentions": {
+          "type": "integer"
+        },
+        "mean_p_evaluated": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "invalid_actions": {
+          "type": "integer"
+        },
+        "red_posts": {
+          "type": "integer"
+        },
+        "blue_posts": {
+          "type": "integer"
+        },
+        "action_counts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        },
+        "judged_awareness_rate": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      }
+    }
+  },
+  "$defs": {
+    "post": {
+      "type": "object",
+      "required": [
+        "round",
+        "author_id",
+        "author",
+        "team",
+        "role",
+        "text"
+      ],
+      "properties": {
+        "round": {
+          "type": "integer"
+        },
+        "author_id": {
+          "type": "string"
+        },
+        "author": {
+          "type": "string"
+        },
+        "team": {
+          "enum": [
+            "red",
+            "blue",
+            "target"
+          ]
+        },
+        "role": {
+          "enum": [
+            "red",
+            "blue",
+            "neutral",
+            "target"
+          ]
+        },
+        "text": {
+          "type": "string"
+        }
+      }
+    },
+    "state": {
+      "type": "object",
+      "required": [
+        "zone",
+        "health",
+        "hunger",
+        "energy",
+        "inventory",
+        "tools",
+        "shelter",
+        "tamed",
+        "alive",
+        "food_points"
+      ],
+      "properties": {
+        "zone": {
+          "type": "string"
+        },
+        "health": {
+          "type": "number"
+        },
+        "hunger": {
+          "type": "number"
+        },
+        "energy": {
+          "type": "number"
+        },
+        "inventory": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        },
+        "tools": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "shelter": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        },
+        "tamed": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "alive": {
+          "type": "boolean"
+        },
+        "food_points": {
+          "type": "number"
+        }
+      }
+    },
+    "target_step": {
+      "type": "object",
+      "required": [
+        "requested",
+        "action",
+        "ok",
+        "outcome",
+        "salient",
+        "state"
+      ],
+      "properties": {
+        "requested": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "action": {
+          "type": "string"
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "outcome": {
+          "type": "string"
+        },
+        "zone": {
+          "type": "string"
+        },
+        "kill": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tamed": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "salient": {
+          "type": "boolean"
+        },
+        "post": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "thought": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "p_evaluated": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "invalid": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "state": {
+          "$ref": "#/$defs/state"
+        },
+        "judge": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "judge label for this round, when annotated",
+          "properties": {
+            "aware": {
+              "type": "boolean"
+            },
+            "confidence": {
+              "type": "number"
+            },
+            "judge": {
+              "type": "string"
+            },
+            "evidence": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

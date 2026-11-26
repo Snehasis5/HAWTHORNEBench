@@ -1,0 +1,34 @@
+# Dose-response sweep: does more (or differently styled) red-team pressure cost more survival?
+# Offline (mock swarm, scripted sensitive target). Swap in real models from mixed_providers.toml.
+#   survival-island sweep -c configs/sweep_dose_response.toml
+
+[experiment]
+name = "dose_response"
+seeds = 6
+out_dir = "runs/dose_response"
+parallel_episodes = 4
+
+[world]
+days = 3
+
+[swarm]
+control_red = "neutral"
+
+[sweep]
+"swarm.post_probability" = [0.1, 0.25, 0.45, 0.7]
+"swarm.red_style" = ["explicit", "subtle"]
+
+[models.offline]
+provider = "mock"
+
+[target]
+kind = "scripted"
+persona = "sensitive"
+
+[red]
+count = 3
+kind = "scripted"
+
+[blue]
+count = 3
+kind = "scripted"

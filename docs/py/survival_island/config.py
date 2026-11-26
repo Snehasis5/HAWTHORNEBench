@@ -41,6 +41,10 @@ class Experiment:
     world: WorldConfig = field(default_factory=WorldConfig)
     post_probability: float = 0.45
     control_red: str = "neutral"
+    red_style: str = "explicit"
+    blue_style: str = "supportive"
+    oracle: dict = field(default_factory=dict)     # {} = off; {"horizon": 12, "rollouts": 6}
+    judge: dict = field(default_factory=dict)      # {} = off; {"model": "<name>"} or {"kind": "regex"}
     board_window: int = 12
     models: dict = field(default_factory=dict)     # name -> ModelSpec
     target: dict = field(default_factory=dict)
@@ -77,7 +81,7 @@ class Experiment:
         bad = [c for c in conds if c not in CONDITIONS]
         if bad:
             raise ConfigError(f"unknown condition(s) {bad}; use {CONDITIONS}")
-        known_w = {k: w[k] for k in ("days", "wolf_risk", "storm_nights", "start_food", "animal_counts") if k in w}
+        known_w = {k: w[k] for k in ("days", "max_rounds", "wolf_risk", "storm_nights", "start_food", "animal_counts") if k in w}
         models = {}
         for name, m in d.get("models", {}).items():
             if "provider" not in m:
@@ -88,21 +92,36 @@ class Experiment:
                 max_concurrency=ex.get("max_concurrency", 8), parallel_episodes=ex.get("parallel_episodes", 2),
                 cache_dir=ex.get("cache_dir", ""), world=WorldConfig(**known_w),
                 post_probability=sw.get("post_probability", .45), control_red=sw.get("control_red", "neutral"),
+                red_style=sw.get("red_style", "explicit"), blue_style=sw.get("blue_style", "supportive"),
+                oracle=d.get("oracle", {}), judge=d.get("judge", {}),
                 board_window=sw.get("board_window", 12), models=models, target=d.get("target", {"kind": "scripted", "persona": "objective"}),
                 red=_members(d.get("red", {}), "red"), blue=_members(d.get("blue", {}), "blue"), base_dir=Path(base_dir), raw=data)
         e.validate()
         return e
 
     def validate(self):
+        from .prompts import RED_STYLES, BLUE_STYLES, BELIEF_MODES
         if self.control_red not in ("neutral", "silent"):
             raise ConfigError("swarm.control_red must be 'neutral' or 'silent'")
+        if self.red_style not in RED_STYLES:
+            raise ConfigError(f"swarm.red_style must be one of {list(RED_STYLES)}")
+        if self.blue_style not in BLUE_STYLES:
+            raise ConfigError(f"swarm.blue_style must be one of {list(BLUE_STYLES)}")
+        if self.target.get("belief_elicitation", "every_round") not in BELIEF_MODES:
+            raise ConfigError(f"target.belief_elicitation must be one of {list(BELIEF_MODES)}")
+        if not 0 <= self.post_probability <= 1:
+            raise ConfigError("swarm.post_probability must be between 0 and 1")
+        if self.world.days < 1:
+            raise ConfigError("world.days must be at least 1")
+        if self.judge.get("model") and self.judge["model"] not in self.models:
+            raise ConfigError(f"judge: model '{self.judge['model']}' is not defined under [models]")
         for who, spec in [("target", self.target)] + [(f"red[{i}]", m) for i, m in enumerate(self.red)] + [(f"blue[{i}]", m) for i, m in enumerate(self.blue)]:
             kind = spec.get("kind", "scripted")
             if kind == "llm" and spec.get("model") not in self.models:
                 raise ConfigError(f"{who}: model '{spec.get('model')}' is not defined under [models]")
             if kind == "python" and not spec.get("path"):
                 raise ConfigError(f"{who}: kind='python' needs path = 'file.py:Name' or 'package.module:Name'")
-            if kind not in ("llm", "scripted", "python"):
+            if kind not in ("llm", "scripted", "python", "oracle"):
                 raise ConfigError(f"{who}: unknown kind '{kind}'")
 
     # ------------------------------------------------------------------ building agents
@@ -114,10 +133,18 @@ class Experiment:
         t = self.target
         kind = t.get("kind", "scripted")
         if kind == "llm":
-            return LLMTarget(models[t["model"]], t.get("system_prompt"), t.get("history_turns", 8), self.world.days)
+            return LLMTarget(models[t["model"]], t.get("system_prompt"), t.get("history_turns", 8), self.world.days,
+                             t.get("belief_elicitation", "every_round"))
         if kind == "python":
             return _load_python(t["path"], t.get("params", {}), self.base_dir)
+        if kind == "oracle":
+            return self.build_oracle(t)
         return ScriptedTarget(t.get("persona", "objective"))
+
+    def build_oracle(self, spec=None):
+        from .agents.oracle import OracleTarget
+        spec = spec or self.oracle or {}
+        return OracleTarget(spec.get("horizon", 12), spec.get("rollouts", 6), spec.get("rollout_policy", "objective"))
 
     def build_member(self, spec, role, models):
         kind = spec.get("kind", "scripted")
@@ -134,6 +161,8 @@ class Experiment:
             return f"{m.provider}:{m.model or m.name}"
         if kind == "python":
             return "python:" + spec["path"]
+        if kind == "oracle":
+            return "oracle"
         return "scripted:" + spec.get("persona", "") if spec is self.target else "scripted"
 
 

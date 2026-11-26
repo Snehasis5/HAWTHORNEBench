@@ -36,3 +36,10 @@ model = "offline"
 count = 3
 kind = "llm"
 model = "offline"
+
+[oracle]                         # best-response benchmark: regret vs an optimal planner
+horizon = 10
+rollouts = 4
+
+[judge]                          # awareness labels; kind "regex" here, or model = "<name>" for an LLM judge
+kind = "regex"

@@ -10,7 +10,7 @@ from .agents.base import Agent, FunctionAgent
 from .agents.llm import LLMTarget, LLMSwarm
 from .agents.scripted import ScriptedTarget, ScriptedSwarm
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 __all__ = ["Experiment", "ConfigError", "Island", "WorldConfig", "ACTIONS", "SALIENT", "ZONES", "run_episode", "Roster",
            "run_experiment", "run_one", "episode_metrics", "pair_metrics", "summarise", "ChatModel", "ModelSpec", "Message",
            "make_model", "PROVIDERS", "Agent", "FunctionAgent", "LLMTarget", "LLMSwarm", "ScriptedTarget", "ScriptedSwarm"]
