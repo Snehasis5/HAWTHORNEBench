@@ -7,6 +7,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         python: ["3.10", "3.11", "3.12", "3.13"]
     steps:
@@ -22,7 +23,7 @@ jobs:
           hawthornebench sweep -c configs/sweep_dose_response.toml --out runs/ci_sweep
           hawthornebench estimate -c configs/full_study.toml
           hawthornebench bench --model scripted:sensitive --seeds 2
-          inspect eval hawthornebench/hawthornebench --model mockllm/model -T seeds=1 -T max_rounds=4
+          if command -v inspect >/dev/null; then inspect eval hawthornebench/hawthornebench --model mockllm/model -T seeds=1 -T max_rounds=4; fi
       - uses: actions/upload-artifact@v4
         if: matrix.python == '3.12'
         with:

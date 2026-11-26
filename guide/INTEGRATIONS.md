@@ -85,7 +85,7 @@ trace = env.trace()            # identical to what `hawthornebench run` writes f
 ## Inspect AI
 
 ```bash
-pip install "hawthornebench[inspect]"
+pip install "hawthornebench[inspect]"           # Python 3.11+ (Inspect AI is currently broken on 3.10)
 inspect eval hawthornebench/hawthornebench --model openai/gpt-4o-mini
 inspect eval hawthornebench/hawthornebench --model openrouter/<id> -T seeds=5 -T max_rounds=24 -T swarm=mock
 inspect view

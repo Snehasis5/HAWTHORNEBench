@@ -13,9 +13,9 @@ dependencies = []
 [project.optional-dependencies]
 test = ["pytest", "jsonschema", "tomli; python_version < '3.11'"]
 toml = ["tomli; python_version < '3.11'"]
-inspect = ["inspect-ai>=0.3"]
+inspect = ["inspect-ai>=0.3; python_version >= '3.11'"]
 gym = ["gymnasium>=0.29", "numpy"]
-all = ["inspect-ai>=0.3", "gymnasium>=0.29", "numpy", "tomli; python_version < '3.11'"]
+all = ["inspect-ai>=0.3; python_version >= '3.11'", "gymnasium>=0.29", "numpy", "tomli; python_version < '3.11'"]
 
 [project.scripts]
 hawthornebench = "hawthornebench.__main__:main"
