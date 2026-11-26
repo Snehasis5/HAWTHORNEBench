@@ -33,9 +33,10 @@ async function get(u){const r=await fetch(u+(u.includes('?')?'&':'?')+'_='+Date.
 function card(x){const u=x.usage||{};const role=x.role||x.team||'';
  const prompt=(x.system?'[system]\n'+x.system+'\n\n':'')+(x.messages||[]).map(m=>'['+m.role+']\n'+m.content).join('\n\n');
  return `<div class="call ${esc(role)}"><div class="meta"><b>${esc(x.name||x.agent||'?')}</b><span>${esc(role)}</span><span>round ${x.round??'–'}</span>
- <span>${esc(x.model)}</span><span>${x.latency_s}s</span><span>${u.input_tokens??'–'} in / ${u.output_tokens??'–'} out</span>
+ <span>${esc(x.served_by&&x.served_by!=='cache'&&!x.model.endsWith(x.served_by)?x.served_by+' (fallback)':x.served_by==='cache'?x.model+' · cached':x.model)}</span><span>${x.latency_s}s</span><span>${u.input_tokens??'–'} in / ${u.output_tokens??'–'} out</span>
  <span>${new Date(x.ts*1000).toLocaleTimeString()}</span></div>
  ${x.error?`<div class="resp err">${esc(x.error)}</div>`:`<div class="resp">${esc(x.response)}</div>`}
+ ${x.reasoning?`<details><summary>reasoning (${x.reasoning.length.toLocaleString()} chars)</summary><pre>${esc(x.reasoning)}</pre></details>`:''}
  <details><summary>prompt (${(x.messages||[]).length} message${(x.messages||[]).length==1?'':'s'})</summary><pre>${esc(prompt)}</pre></details></div>`}
 function render(){const r=$('#role').value,q=$('#q').value.toLowerCase();
  const sel=rows.filter(x=>(!r||(x.role||x.team)===r)&&(!q||JSON.stringify(x).toLowerCase().includes(q)));
