@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "survival-island"
+version = "0.1.0"
+description = "A multi-agent survival harness with a 3D viewer for studying evaluation awareness in AI agents"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[project.scripts]
+survival-island = "survival_island.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["survival_island*"]
+
+[tool.setuptools.package-data]
+survival_island = ["viewer/*.html"]
