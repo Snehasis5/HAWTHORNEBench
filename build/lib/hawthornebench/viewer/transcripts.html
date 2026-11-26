@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HAWTHORNEBench · model transcripts</title>
+<style>
+:root{--ink:#1d2326;--mute:#66707a;--line:#e6e9ec;--bg:#fbfbfa;--red:#d6453a;--blue:#2f7fb8;--tgt:#2f9e75;--judge:#b07d10}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--line);padding:12px 20px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;z-index:2}
+h1{font-size:16px;margin:0}select,input{font:inherit;padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:#fff}
+.stat{color:var(--mute);font-size:12.5px}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#9aa3ab;margin-right:6px}.dot.on{background:var(--tgt);animation:p 1.2s infinite}
+@keyframes p{50%{opacity:.35}}
+main{max-width:1100px;margin:0 auto;padding:14px 20px 60px}
+.call{background:#fff;border:1px solid var(--line);border-left:4px solid #9aa3ab;border-radius:8px;margin:10px 0;padding:10px 14px}
+.call.target{border-left-color:var(--tgt)}.call.red{border-left-color:var(--red)}.call.blue{border-left-color:var(--blue)}.call.neutral{border-left-color:#9aa3ab}.call.judge{border-left-color:var(--judge)}
+.meta{display:flex;gap:12px;flex-wrap:wrap;font-size:12.5px;color:var(--mute)}.meta b{color:var(--ink)}
+.resp{margin-top:6px;white-space:pre-wrap;font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;background:#f4f6f7;border-radius:6px;padding:8px 10px}
+.err{color:var(--red)}
+details{margin-top:6px}summary{cursor:pointer;color:var(--mute);font-size:12.5px}
+details pre{white-space:pre-wrap;font:12px/1.45 ui-monospace,Menlo,monospace;background:#f8f9fa;border:1px solid var(--line);border-radius:6px;padding:8px 10px;max-height:340px;overflow:auto}
+.empty{color:var(--mute);padding:40px 0;text-align:center}
+</style></head><body>
+<header><h1>Model transcripts</h1>
+<span class="stat"><span id="dot" class="dot"></span><span id="src">waiting for a run…</span></span>
+<label class="stat">Role <select id="role"><option value="">all</option><option>target</option><option>red</option><option>blue</option><option>neutral</option><option>judge</option></select></label>
+<input id="q" placeholder="filter text" size="18">
+<span class="stat" id="count"></span>
+<a class="stat" href="index.html?live=live.json" style="margin-left:auto">3D viewer</a></header>
+<main><div id="list"><p class="empty">Every model call of the run appears here as it happens: who called, the round, latency, tokens, the reply, and the full prompt.</p></div></main>
+<script>
+const qs=new URLSearchParams(location.search);const FIXED=qs.get('file');
+let file=FIXED,rows=[],lines=0,done=false;
+const $=s=>document.querySelector(s),esc=t=>String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+async function get(u){const r=await fetch(u+(u.includes('?')?'&':'?')+'_='+Date.now());if(!r.ok)throw new Error(r.status);return r}
+function card(x){const u=x.usage||{};const role=x.role||x.team||'';
+ const prompt=(x.system?'[system]\n'+x.system+'\n\n':'')+(x.messages||[]).map(m=>'['+m.role+']\n'+m.content).join('\n\n');
+ return `<div class="call ${esc(role)}"><div class="meta"><b>${esc(x.name||x.agent||'?')}</b><span>${esc(role)}</span><span>round ${x.round??'–'}</span>
+ <span>${esc(x.served_by&&x.served_by!=='cache'&&!x.model.endsWith(x.served_by)?x.served_by+' (fallback)':x.served_by==='cache'?x.model+' · cached':x.model)}</span><span>${x.latency_s}s</span><span>${u.input_tokens??'–'} in / ${u.output_tokens??'–'} out</span>
+ <span>${new Date(x.ts*1000).toLocaleTimeString()}</span></div>
+ ${x.error?`<div class="resp err">${esc(x.error)}</div>`:`<div class="resp">${esc(x.response)}</div>`}
+ ${x.reasoning?`<details><summary>reasoning (${x.reasoning.length.toLocaleString()} chars)</summary><pre>${esc(x.reasoning)}</pre></details>`:''}
+ <details><summary>prompt (${(x.messages||[]).length} message${(x.messages||[]).length==1?'':'s'})</summary><pre>${esc(prompt)}</pre></details></div>`}
+function render(){const r=$('#role').value,q=$('#q').value.toLowerCase();
+ const sel=rows.filter(x=>(!r||(x.role||x.team)===r)&&(!q||JSON.stringify(x).toLowerCase().includes(q)));
+ $('#count').textContent=`${sel.length} of ${rows.length} calls`;
+ const atBottom=innerHeight+scrollY>=document.body.scrollHeight-40;
+ $('#list').innerHTML=sel.length?sel.map(card).join(''):'<p class="empty">No calls yet.</p>';
+ if(atBottom)scrollTo(0,document.body.scrollHeight)}
+async function tick(){try{
+ if(!FIXED){const live=await (await get('live.json')).json();done=live.run_complete===true||(!live.partial&&!('run_complete' in live));
+  if(live.transcript&&live.transcript!==file){file=live.transcript;rows=[];lines=0}
+  $('#src').textContent=(done?'finished · ':'live · ')+`seed ${live.seed}, ${live.condition} · ${file||''}`;$('#dot').classList.toggle('on',!done)}
+ else $('#src').textContent=FIXED;
+ if(file){const t=await (await get(file)).text();const ls=t.split('\n').filter(Boolean);
+  if(ls.length!==lines){rows=ls.map(l=>{try{return JSON.parse(l)}catch(e){return null}}).filter(Boolean);lines=ls.length;render()}}
+}catch(e){}
+ if(!FIXED&&!done)setTimeout(tick,1000);else if(!FIXED)setTimeout(tick,4000)}
+$('#role').onchange=render;$('#q').oninput=render;tick();
+</script></body></html>

@@ -1,0 +1,45 @@
+# HAWTHORNEBench: offline quick start. No API keys needed.
+# Target: scripted "sensitive" persona; red and blue teams: offline mock model.
+# Swap any [target]/[red]/[blue] entry to kind = "llm" with a model from [models] to use real LLMs.
+
+[experiment]
+name = "quickstart"
+seeds = 10                       # seeds 0..9; or a list like [3, 7, 11]
+conditions = ["evaluation", "control"]
+out_dir = "runs/quickstart"
+max_concurrency = 8              # simultaneous model calls
+parallel_episodes = 4
+
+[world]
+days = 5
+wolf_risk = 0.12
+storm_nights = 2
+
+[swarm]
+post_probability = 0.45          # chance each member is awake in a round (same schedule in both conditions)
+control_red = "neutral"          # in control, red members post neutral chatter ("silent" removes them)
+board_window = 12                # board posts shown to swarm members
+
+[models.offline]
+provider = "mock"
+
+[target]
+kind = "scripted"
+persona = "sensitive"            # objective | sensitive | random
+
+[red]
+count = 3
+kind = "llm"
+model = "offline"
+
+[blue]
+count = 3
+kind = "llm"
+model = "offline"
+
+[oracle]                         # best-response benchmark: regret vs an optimal planner
+horizon = 10
+rollouts = 4
+
+[judge]                          # awareness labels; kind "regex" here, or model = "<name>" for an LLM judge
+kind = "regex"

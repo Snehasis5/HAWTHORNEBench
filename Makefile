@@ -1,7 +1,7 @@
 .PHONY: install test quickstart sweep estimate view pages docker clean
 
 install:        ## editable install with test extras
-	pip install -e ".[test]"
+	pip install -e ".[test,all]"
 
 test:           ## unit and integration tests (offline)
 	pytest -q tests

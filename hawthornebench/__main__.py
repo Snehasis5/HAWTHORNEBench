@@ -24,19 +24,35 @@ import threading
 import webbrowser
 from pathlib import Path
 
-from .config import Experiment, ConfigError
+from .config import load_experiment, resolve_config as _resolve, Experiment, ConfigError
 from .experiment import run_experiment, run_one, make_report, report_markdown, write_json
 from .providers import Message
 
 PKG = Path(__file__).parent
 
 
+def resolve_config(c):
+    try:
+        return _resolve(c)
+    except ConfigError as e:
+        sys.exit(str(e))
+
+
+def load_config(c) -> Experiment:
+    try:
+        return load_experiment(c)
+    except ConfigError as e:
+        sys.exit(str(e))
+
+
 def _exp(a) -> Experiment:
-    exp = Experiment.load(a.config)
+    exp = load_config(getattr(a, "config", None))
     if getattr(a, "seeds", None):
         exp.seeds = list(range(exp.seeds[0] if exp.seeds else 0, (exp.seeds[0] if exp.seeds else 0) + a.seeds))
     if getattr(a, "out", None):
         exp.out_dir = a.out
+    exp.override(target=getattr(a, "target", None), red=getattr(a, "red", None), blue=getattr(a, "blue", None),
+                 swarm=getattr(a, "swarm", None), judge=getattr(a, "judge_model", None))
     return exp
 
 
@@ -101,9 +117,10 @@ def cmd_run(a):
 
 def cmd_sweep(a):
     from .sweep import run_sweep
-    exp_path = Path(a.config)
+    exp_path = resolve_config(a.config)
     raw = Experiment.load(exp_path).raw
-    s = asyncio.run(run_sweep(raw, exp_path.parent, a.out))
+    base = Path.cwd() if PKG in exp_path.resolve().parents else exp_path.parent
+    s = asyncio.run(run_sweep(raw, base, a.out))
     from .sweep import sweep_markdown
     print()
     print(sweep_markdown(s))
@@ -111,7 +128,7 @@ def cmd_sweep(a):
 
 def cmd_judge(a):
     from .judge import annotate
-    exp = Experiment.load(a.config)
+    exp = load_config(a.config)
     models = exp.build_models()
     jm = models.get(exp.judge.get("model")) if exp.judge.get("model") else None
     root = Path(a.path)
@@ -151,6 +168,11 @@ def cmd_estimate(a):
     for r in rows:
         print(f"{r[0]:<10} {r[1]:<38} {r[2]:>8} {r[3]:>12,} {r[4]:>11,} {r[5]:>9.2f}")
     print(f"\nEstimated total: {total:.2f} USD (rough; set price_input_per_mtok / price_output_per_mtok on each model)")
+
+
+def cmd_bench(a):
+    from .bench import run_bench
+    run_bench(a)
 
 
 def cmd_report(a):
@@ -254,22 +276,33 @@ def cmd_view(a):
     _serve(root, a.port, f"?trace={files[0]}" if files else "", not a.no_browser)
 
 
+def _agent_flags(p):
+    g = p.add_argument_group("agent overrides", "shorthands such as openrouter:<model>, openai:gpt-4o-mini, ollama:llama3.1, "
+                                                 "scripted:sensitive, python:file.py:Class, mock")
+    g.add_argument("--target", help="the agent under test")
+    g.add_argument("--swarm", help="both red and blue teams")
+    g.add_argument("--red"); g.add_argument("--blue")
+    g.add_argument("--judge-model", help="LLM awareness judge (or 'regex')")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="hawthornebench", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("init", help="write a starter config"); p.add_argument("path", nargs="?", default="experiment.toml")
     p.add_argument("--llm", action="store_true", help="start from the mixed-provider LLM template"); p.add_argument("--force", action="store_true"); p.set_defaults(fn=cmd_init)
     for name, fn, h in (("check", cmd_check, "validate config and ping each model"), ("run", cmd_run, "run all seeds and conditions")):
-        p = sub.add_parser(name, help=h); p.add_argument("-c", "--config", required=True)
+        p = sub.add_parser(name, help=h); p.add_argument("-c", "--config", help="config path or packaged name (default: quickstart)")
         p.add_argument("--seeds", type=int, help="override the number of seeds"); p.add_argument("--out", help="override out_dir"); p.set_defaults(fn=fn)
+        _agent_flags(p)
         if name == "run":
             p.add_argument("--live", action="store_true", help="serve the 3D viewer and transcript feed while the run plays")
             p.add_argument("--port", type=int, default=8765); p.add_argument("--no-browser", action="store_true")
             p.add_argument("--exit", action="store_true", help="with --live: stop serving when the run ends")
             p.add_argument("--no-transcripts", action="store_true", help="do not save per-call transcripts")
-    p = sub.add_parser("live", help="run one episode and watch it in the 3D viewer"); p.add_argument("-c", "--config", required=True)
+    p = sub.add_parser("live", help="run one episode and watch it in the 3D viewer"); p.add_argument("-c", "--config", help="config path or packaged name (default: quickstart)")
     p.add_argument("--seed", type=int, default=0); p.add_argument("--condition", choices=["evaluation", "control"], default="evaluation")
     p.add_argument("--out"); p.add_argument("--port", type=int, default=8765); p.add_argument("--no-browser", action="store_true"); p.set_defaults(fn=cmd_live)
+    _agent_flags(p)
     p = sub.add_parser("view", help="replay saved traces in the 3D viewer"); p.add_argument("path")
     p.add_argument("--port", type=int, default=8765); p.add_argument("--no-browser", action="store_true"); p.set_defaults(fn=cmd_view)
     p = sub.add_parser("report", help="rebuild the report from saved traces"); p.add_argument("path"); p.set_defaults(fn=cmd_report)
@@ -277,8 +310,18 @@ def main(argv=None):
     p.add_argument("--out"); p.set_defaults(fn=cmd_sweep)
     p = sub.add_parser("judge", help="label evaluation awareness in saved traces"); p.add_argument("path"); p.add_argument("-c", "--config", required=True)
     p.set_defaults(fn=cmd_judge)
-    p = sub.add_parser("estimate", help="estimate calls, tokens and cost"); p.add_argument("-c", "--config", required=True)
+    p = sub.add_parser("estimate", help="estimate calls, tokens and cost"); p.add_argument("-c", "--config", help="config path or packaged name (default: quickstart)")
     p.add_argument("--seeds", type=int); p.add_argument("--out"); p.set_defaults(fn=cmd_estimate)
+    _agent_flags(p)
+    p = sub.add_parser("bench", help="score one model on the standard protocol and add a leaderboard row")
+    p.add_argument("--model", required=True, help="the target, e.g. openrouter:<id>, openai:gpt-4o-mini, ollama:llama3.1, scripted:objective")
+    p.add_argument("-c", "--config", default="bench_v1", help="protocol config (default: the packaged bench_v1)")
+    p.add_argument("--seeds", type=int, help="fewer seeds for a smoke test (the row is marked as not comparable)")
+    p.add_argument("--max-rounds", type=int, help="cap episode length for a smoke test (marked as not comparable)")
+    p.add_argument("--swarm", help="replace the scripted teams with a model (marked as a variant)")
+    p.add_argument("--out", default="runs/bench"); p.add_argument("--live", action="store_true")
+    p.add_argument("--port", type=int, default=8765); p.add_argument("--no-browser", action="store_true")
+    p.set_defaults(fn=cmd_bench)
     a = ap.parse_args(argv)
     try:
         a.fn(a)

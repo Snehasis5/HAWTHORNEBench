@@ -32,20 +32,65 @@ Every participant (the target and each red- or blue-team member) can be any mode
 | **Statistics** | Bootstrap CIs, exact paired permutation tests, Holm correction, Wilcoxon, d_z, seeds for 80% power, dose-response regression |
 | **Outputs** | Traces validated against a [JSON Schema](schemas/trace.schema.json), per-call model transcripts, and Markdown, JSON and HTML reports ([trace format](guide/TRACE_FORMAT.md)) |
 | **Live** | `run --live` streams the run into the 3D viewer and a transcript feed as it plays |
+| **Integrations** | Python API, a Gymnasium-style environment (`HawthorneBench-v0`), an Inspect AI task, a Colab notebook, a `bench` command with leaderboard ([integrations](guide/INTEGRATIONS.md)) |
 | **Browser** | The same Python engine runs in the page through Pyodide |
 
-## Quick start
+## Get started
+
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Snehasis5/HAWTHORNEBench/blob/main/notebooks/quickstart.ipynb)
 
 ```bash
-git clone https://github.com/Snehasis5/HAWTHORNEBench && cd HAWTHORNEBench
-pip install -e .                                    # standard library only; Python 3.10+ (3.11+ for TOML configs, or pip install -e ".[toml]")
-
-hawthornebench run -c configs/quickstart.toml      # offline: scripted target, mock-model swarms, oracle, judge; 10 seeds x 2 conditions
-open runs/quickstart/report.html                    # or report.md
-hawthornebench view runs/quickstart                # replay any episode in the 3D viewer
+pip install "hawthornebench @ git+https://github.com/Snehasis5/HAWTHORNEBench"          # no dependencies; Python 3.10+
+pip install "hawthornebench[all] @ git+https://github.com/Snehasis5/HAWTHORNEBench"     # + Gymnasium, Inspect AI, TOML on 3.10
 ```
 
+Pick the entry point that fits how you work. All five run offline out of the box; add a key to use a real model.
 
+**1. Command line**
+
+```bash
+hawthornebench run                                          # packaged quickstart: 10 seeds x 2 conditions, offline, a few seconds
+hawthornebench run --target openrouter:<model-id> --live     # your model as the target, watched live in 3D
+hawthornebench bench --model openai:gpt-4o-mini             # standard protocol, adds a row to runs/bench/leaderboard.md
+```
+
+**2. Python**
+
+```python
+import hawthornebench as hb
+report = hb.run("quickstart", seeds=5, target="anthropic:claude-3-5-haiku-latest", swarm="openrouter:<model-id>")
+print(report["paired_summary"]["survival_regret"])           # mean, sd, 95% CI; report.html is written alongside
+```
+
+**3. Step-by-step environment (Gymnasium style)**
+
+```python
+env = hb.make("quickstart", condition="evaluation")         # the red and blue teams run inside; you play the target
+obs, info = env.reset(seed=0)
+obs, reward, terminated, truncated, info = env.step("gather_wood")
+print(info["text"])                                          # the observation exactly as an LLM target sees it
+# with gymnasium installed: gymnasium.make("HawthorneBench-v0")
+```
+
+**4. Inspect AI**
+
+```bash
+inspect eval hawthornebench/hawthornebench --model openai/gpt-4o-mini -T seeds=5
+```
+
+**5. Colab:** the [quick-start notebook](notebooks/quickstart.ipynb) walks through all of the above.
+
+**Models** are one-line shorthands everywhere. Keys come from environment variables, never from files:
+
+| Shorthand | Key variable |
+|---|---|
+| `openai:gpt-4o-mini` · `anthropic:claude-3-5-haiku-latest` · `gemini:gemini-1.5-flash` | `OPENAI_API_KEY` · `ANTHROPIC_API_KEY` · `GEMINI_API_KEY` |
+| `openrouter:<any id>` (including `:free` models) | `OPENROUTER_API_KEY` |
+| `groq:` · `together:` · `deepseek:` · `mistral:` · `fireworks:` · `xai:` | `GROQ_API_KEY`, ... |
+| `ollama:llama3.1` · `lmstudio:<model>` · `vllm:<model>@http://host:8000/v1` | none (local) |
+| `scripted:objective` · `scripted:sensitive` · `python:my_agent.py:MyAgent` · `mock` | none |
+
+Options go after `?`, for example `openrouter:<id>?max_tokens=3000&temperature=0&reasoning_effort=low`. For full control (several models, per-member settings, prompt styles, sweeps), write a config file: `hawthornebench init my.toml`. See [guide/INTEGRATIONS.md](guide/INTEGRATIONS.md) and [guide/EXPERIMENTS.md](guide/EXPERIMENTS.md).
 
 ## Live runs with real models
 
@@ -240,8 +285,11 @@ runs/<name>/traces.json                            index used by the viewer
 
 ## CLI
 
+Every command that takes `-c` also accepts a packaged config name (`quickstart`, `bench_v1`, `openrouter_free`, `full_study`, `sweep_dose_response`, `mixed_providers`) and the overrides `--target`, `--swarm`, `--red`, `--blue`, `--judge-model`.
+
 ```
 hawthornebench init my.toml [--llm]            starter config
+hawthornebench bench --model <shorthand>       standard protocol, one leaderboard row
 hawthornebench check -c my.toml                validate and ping each model
 hawthornebench estimate -c my.toml             calls, tokens and cost before running
 hawthornebench run -c my.toml [--seeds N]      all seeds x conditions: traces, transcripts, reports
@@ -264,29 +312,34 @@ hawthornebench report runs/my                  rebuild the reports from traces
 ## Development
 
 ```bash
-make install && make test          # 27 tests, all offline: mock models, a fake HTTP provider, schema validation
+make install && make test          # 36 tests, all offline: mock models, a fake HTTP provider, schema validation
 make quickstart sweep estimate     # end-to-end runs
 make pages                         # rebuild docs/: viewer, Python sources for Pyodide, demo traces, example reports
 docker build -t hawthornebench . && docker run -e OPENROUTER_API_KEY -v $PWD/runs:/app/runs hawthornebench run -c configs/openrouter_free.toml
 ```
 
 ```
-hawthornebench/world.py          island state, actions, animals, threats, survival score
-hawthornebench/engine.py         round loop, roster randomisation, call attribution, trace building
-hawthornebench/agents/           LLM, scripted, oracle and function agents
-hawthornebench/providers/        provider-agnostic chat layer, retries, cache, transcripts
-hawthornebench/prompts.py        prompt styles for every role, belief elicitation, observation rendering
-hawthornebench/metrics.py        episode and paired measures, bootstrap summaries
-hawthornebench/stats.py          permutation, Wilcoxon, Holm, effect size, power, OLS
-hawthornebench/judge.py          regex and LLM awareness judges
-hawthornebench/experiment.py     seeds x conditions, oracle runs, concurrency, reports
-hawthornebench/sweep.py          factorial sweeps and dose-response
-hawthornebench/report_html.py    self-contained HTML reports
-hawthornebench/web.py            browser entry points (Pyodide)
-hawthornebench/viewer/           3D viewer and live transcript feed
-configs/                          quickstart, mixed_providers, full_study, sweep_dose_response, openrouter_free
-guide/                            methodology, architecture, agents, providers, prompts, trace format, experiments
-schemas/trace.schema.json         trace format
-examples/custom_agents.py         plug-in examples for every role
+hawthornebench/world.py               island state, actions, animals, threats, survival score
+hawthornebench/engine.py              round loop, roster randomisation, call attribution, trace building
+hawthornebench/agents/                LLM, scripted, oracle and function agents
+hawthornebench/providers/             provider-agnostic chat layer, retries, cache, transcripts
+hawthornebench/prompts.py             prompt styles for every role, belief elicitation, observation rendering
+hawthornebench/metrics.py             episode and paired measures, bootstrap summaries
+hawthornebench/stats.py               permutation, Wilcoxon, Holm, effect size, power, OLS
+hawthornebench/judge.py               regex and LLM awareness judges
+hawthornebench/experiment.py          seeds x conditions, oracle runs, concurrency, reports
+hawthornebench/sweep.py               factorial sweeps and dose-response
+hawthornebench/report_html.py         self-contained HTML reports
+hawthornebench/env.py                 step-by-step environment API and Gymnasium registration
+hawthornebench/bench.py               standard protocol and leaderboard
+hawthornebench/integrations/          Inspect AI task
+hawthornebench/providers/registry.py  model shorthands
+hawthornebench/web.py                 browser entry points (Pyodide)
+hawthornebench/viewer/                3D viewer and live transcript feed
+configs/                              quickstart, bench_v1, mixed_providers, full_study, sweep_dose_response, openrouter_free
+notebooks/quickstart.ipynb            Colab walkthrough
+guide/                                methodology, architecture, agents, providers, prompts, trace format, experiments
+schemas/trace.schema.json             trace format
+examples/custom_agents.py             plug-in examples for every role
 ```
 

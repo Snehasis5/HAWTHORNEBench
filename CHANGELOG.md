@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.4.0
+
+- **One-line models everywhere:**
+  - Provider shorthands: `openrouter:<id>`, `openai:`, `anthropic:`, `gemini:`, `groq:`, `together:`, `deepseek:`, `mistral:`, `fireworks:`, `xai:`, `ollama:`, `lmstudio:`, `vllm:<m>@<url>`, `mock`.
+  - Agent shorthands: `scripted:<persona>`, `python:<file>:<Class>`, `oracle`.
+  - Options after `?`.
+- **CLI overrides** `--target`, `--swarm`, `--red`, `--blue`, `--judge-model`. Commands accept packaged config names and default to `quickstart`, so `hawthornebench run` works from any directory.
+- **Python API:** `hb.run(...)`, `hb.load_experiment(...)`, `Experiment.override(...)`; safe in notebooks.
+- **Step-by-step environment:**
+  - `hb.make()` returns a `HawthorneEnv`; `AsyncHawthorneEnv` is the async version.
+  - Gymnasium registration as `HawthorneBench-v0`; passes `check_env`.
+  - The engine is refactored into a steppable `Episode`, so env and batch runs produce identical traces.
+- **Inspect AI task:** `inspect eval hawthornebench/hawthornebench`, with paired survival-regret and salient-change metrics.
+- **`hawthornebench bench`:** the `bench_v1` draft protocol (scripted teams so every model faces identical pressure) with a leaderboard in JSONL, Markdown and HTML.
+- **Colab notebook:** `notebooks/quickstart.ipynb`.
+- **Install extras:** `[gym]`, `[inspect]`, `[all]`.
+
 ## 0.3.0
 
 - **Renamed to HAWTHORNEBench** (was Survival Island). The package, CLI command (`hawthornebench`) and trace schema id (`hawthornebench/trace@2`) changed. The viewer still opens old `survival-island/trace@2` files.

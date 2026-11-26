@@ -124,6 +124,35 @@ class Experiment:
             if kind not in ("llm", "scripted", "python", "oracle"):
                 raise ConfigError(f"{who}: unknown kind '{kind}'")
 
+    # ------------------------------------------------------------------ overrides
+    def override(self, target: str | None = None, red: str | None = None, blue: str | None = None,
+                 swarm: str | None = None, judge: str | None = None) -> "Experiment":
+        """Swap agents in with shorthands: 'openrouter:<model>', 'ollama:llama3.1', 'scripted:sensitive', 'mock', ...
+        `swarm` sets both teams. Team sizes are kept. Returns self."""
+        from .providers.registry import agent_spec, spec_from_string
+        try:
+            if target:
+                keep = {k: v for k, v in self.target.items() if k in ("history_turns", "belief_elicitation", "system_prompt")}
+                self.target = {**agent_spec(target, self.models), **keep}
+            for team, s in (("red", red or swarm), ("blue", blue or swarm)):
+                if s:
+                    n = len(getattr(self, team)) or 3
+                    spec = agent_spec(s, self.models)
+                    if spec["kind"] == "oracle":
+                        raise ConfigError("the oracle can only play the target")
+                    setattr(self, team, [dict(spec) for _ in range(n)])
+            if judge:
+                if judge == "regex":
+                    self.judge = {"kind": "regex"}
+                else:
+                    js = spec_from_string(judge, name="judge")
+                    self.models["judge"] = js
+                    self.judge = {"model": "judge"}
+        except ValueError as e:
+            raise ConfigError(str(e)) from None
+        self.validate()
+        return self
+
     # ------------------------------------------------------------------ building agents
     def build_models(self):
         cache = str(self.base_dir / self.cache_dir) if self.cache_dir else None
@@ -200,3 +229,33 @@ def _load_python(spec: str, params: dict, base_dir: Path):
     if callable(obj):
         return FunctionAgent(obj, attr)
     raise ConfigError(f"{spec} is not an agent class, agent object or function")
+
+
+PACKAGED = Path(__file__).resolve().parent / "configs"
+
+
+def resolve_config(c: str | Path | None) -> Path:
+    """A path, or the name of a packaged config ('quickstart', 'bench_v1', 'openrouter_free', ...)."""
+    if not c:
+        return PACKAGED / "quickstart.toml"
+    p = Path(c)
+    if p.exists():
+        return p
+    for cand in (PACKAGED / str(c), PACKAGED / f"{c}.toml"):
+        if cand.exists():
+            return cand
+    names = ", ".join(sorted(x.stem for x in PACKAGED.glob("*.toml")))
+    raise ConfigError(f"config '{c}' not found. Give a path, or one of the packaged configs: {names}")
+
+
+def load_experiment(c=None) -> Experiment:
+    """An Experiment from an Experiment, a dict, a path, or a packaged config name (default: quickstart)."""
+    if isinstance(c, Experiment):
+        return c
+    if isinstance(c, dict):
+        return Experiment.from_dict(c, Path.cwd())
+    p = resolve_config(c)
+    exp = Experiment.load(p)
+    if PACKAGED in p.resolve().parents:   # packaged config: relative paths (cache, python agents) are the user's cwd
+        exp.base_dir = Path.cwd()
+    return exp

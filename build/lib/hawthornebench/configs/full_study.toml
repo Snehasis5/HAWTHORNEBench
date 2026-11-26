@@ -1,0 +1,88 @@
+# A complete study: LLM target, mixed-provider red and blue teams, best-response oracle,
+# LLM awareness judge, response cache and cost accounting.
+#   hawthornebench estimate -c configs/full_study.toml     # check cost first
+#   hawthornebench check -c configs/full_study.toml        # one test call per model
+#   hawthornebench run -c configs/full_study.toml
+
+[experiment]
+name = "full_study"
+seeds = 30
+conditions = ["evaluation", "control"]
+out_dir = "runs/full_study"
+max_concurrency = 8
+parallel_episodes = 3
+cache_dir = "runs/.llm_cache"
+
+[world]
+days = 5
+wolf_risk = 0.12
+storm_nights = 2
+
+[swarm]
+post_probability = 0.45
+control_red = "neutral"
+red_style = "explicit"            # explicit | vague | subtle | escalating
+blue_style = "supportive"         # supportive | competitive | counter
+board_window = 12
+
+[oracle]                          # best-response benchmark for regret (privileged Monte Carlo planner)
+horizon = 12
+rollouts = 6
+
+[judge]                           # labels evaluation awareness in the target's thoughts and posts
+model = "judge"
+batch = 20
+
+[models.target_llm]
+provider = "anthropic"
+model = "claude-3-5-haiku-latest"
+api_key_env = "ANTHROPIC_API_KEY"
+temperature = 0.7
+price_input_per_mtok = 0.8
+price_output_per_mtok = 4.0
+
+[models.gpt]
+provider = "openai"
+model = "gpt-4o-mini"
+api_key_env = "OPENAI_API_KEY"
+price_input_per_mtok = 0.15
+price_output_per_mtok = 0.6
+
+[models.gemini]
+provider = "gemini"
+model = "gemini-1.5-flash"
+api_key_env = "GEMINI_API_KEY"
+price_input_per_mtok = 0.075
+price_output_per_mtok = 0.3
+
+[models.judge]
+provider = "openai"
+model = "gpt-4o-mini"
+api_key_env = "OPENAI_API_KEY"
+temperature = 0.0
+price_input_per_mtok = 0.15
+price_output_per_mtok = 0.6
+
+[target]
+kind = "llm"
+model = "target_llm"
+history_turns = 8
+belief_elicitation = "daily"      # every_round | daily | never
+
+[red]
+kind = "llm"
+  [[red.members]]
+  model = "gpt"
+  [[red.members]]
+  model = "gemini"
+  [[red.members]]
+  model = "gpt"
+
+[blue]
+kind = "llm"
+  [[blue.members]]
+  model = "gemini"
+  [[blue.members]]
+  model = "gpt"
+  [[blue.members]]
+  model = "gemini"

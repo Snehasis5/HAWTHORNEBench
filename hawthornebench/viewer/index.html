@@ -198,7 +198,7 @@ footer a{color:var(--gold)}
   <div class="intro gone" id="runner" role="dialog" aria-modal="true" aria-labelledby="run-h">
     <form class="card glass" id="runform" novalidate>
       <h2 id="run-h">Run agents</h2>
-      <p class="small">Runs in this browser with the package's Python engine (Pyodide). API keys stay in this tab and go only to the endpoint you enter. Offline options need no key.</p>
+      <p class="small">Runs in this browser with the package's Python engine (Pyodide). API keys stay in this tab and go only to the endpoint you enter. Offline options need no key. To use a real model, choose a <b>Provider</b> (e.g. <i>OpenRouter (free models)</i>) and an <b>API key</b> field appears; tick <i>Same model as the target</i> on the teams to enter the key once.</p>
       <div id="roles"></div>
       <fieldset class="fs"><legend>Experiment</legend>
         <div class="fgrid">
@@ -696,6 +696,7 @@ const PRESETS={
  openai:{label:'OpenAI',provider:'openai',base:'https://api.openai.com/v1',model:'gpt-4o-mini',key:true},
  anthropic:{label:'Anthropic',provider:'anthropic',base:'https://api.anthropic.com',model:'',key:true,hint:'model id from your Anthropic console'},
  gemini:{label:'Google Gemini',provider:'gemini',base:'https://generativelanguage.googleapis.com/v1beta',model:'gemini-1.5-flash',key:true},
+ openrouter_free:{label:'OpenRouter (free models)',provider:'openai_compatible',base:'https://openrouter.ai/api/v1',model:'baidu/ernie-5.5-flash-preview:free',key:true,max_tokens:3000,extra:{reasoning:{effort:'low'},models:['baidu/ernie-5.5-flash-preview:free','google/gemma-4-31b-it:free','openrouter/free']},note:'Free key from openrouter.ai/keys. About 50 requests a day: keep runs to 1 day and a few members.'},
  openrouter:{label:'OpenRouter',provider:'openai_compatible',base:'https://openrouter.ai/api/v1',model:'meta-llama/llama-3.1-8b-instruct',key:true},
  groq:{label:'Groq',provider:'openai_compatible',base:'https://api.groq.com/openai/v1',model:'llama-3.1-8b-instant',key:true},
  together:{label:'Together',provider:'openai_compatible',base:'https://api.together.xyz/v1',model:'meta-llama/Llama-3.3-70B-Instruct-Turbo',key:true},
@@ -711,13 +712,15 @@ $('#roles').innerHTML=ROLEDEF.map(r=>'<fieldset class="fs" data-role="'+r.id+'">
  (r.id!=='target'?'<label class="chk llmo"><input type="checkbox" data-f="same">Same model as the target</label>':'<span></span>')+
  '<label class="llmo own">Provider<select data-f="preset">'+Object.entries(PRESETS).map(([k,p])=>'<option value="'+k+'">'+esc(p.label)+'</option>').join('')+'</select></label>'+
  '<label class="llmo own">Model<input data-f="model" spellcheck="false" autocomplete="off"></label>'+
- '<label class="llmo own keyf">API key<input data-f="key" type="password" spellcheck="false" autocomplete="off"></label>'+
+ '<label class="llmo own keyf">API key<input data-f="key" type="password" spellcheck="false" autocomplete="off" placeholder="paste your key (stays in this tab)"></label>'+
+ '<p class="llmo own small keyhint full" style="margin:0;opacity:.8"></p>'+
  '<label class="llmo own full">Endpoint<input data-f="base" spellcheck="false"></label></div></fieldset>').join('');
 function fsOf(role){return $('fieldset[data-role="'+role+'"]')}
 function fval(role,f){const e=fsOf(role).querySelector('[data-f="'+f+'"]');return e?(e.type==='checkbox'?e.checked:e.value.trim()):null}
 function syncRoles(){ROLEDEF.forEach(r=>{const fs=fsOf(r.id),llm=fval(r.id,'kind')==='llm',same=fval(r.id,'same'),pr=PRESETS[fval(r.id,'preset')];
  fs.querySelectorAll('.llmo').forEach(e=>e.hidden=!llm);fs.querySelectorAll('.own').forEach(e=>e.hidden=!llm||same);fs.querySelectorAll('.keyf').forEach(e=>e.hidden=!llm||same||!pr.key);fs.querySelectorAll('[data-f="base"]').forEach(e=>e.closest('label').hidden=!llm||same||pr.provider==='mock');
- const m=fs.querySelector('[data-f="model"]');m.placeholder=pr.hint||pr.model||'model id'});
+ const m=fs.querySelector('[data-f="model"]');m.placeholder=pr.hint||pr.model||'model id';
+ const kh=fs.querySelector('.keyhint');if(kh){kh.hidden=!llm||same;kh.textContent=pr.provider==='mock'?'Offline: no key needed. To use a real model, pick a provider above (e.g. OpenRouter); an API key field appears.':(pr.note||'')}});
  const days=+$('#x-days').value||3,p=+$('#x-post').value||.45,rounds=days*12,n=(+fval('red','count')||0)+(+fval('blue','count')||0);
  const calls=(fval('target','kind')==='llm'?rounds:0)+(['red','blue'].reduce((a,t)=>a+(fval(t,'kind')==='llm'?(+fval(t,'count')||0)*rounds*p:0),0));
  $('#estimate').textContent='About '+Math.round(calls)+' model calls per run'+($('#x-pair').checked?', '+Math.round(calls*2)+' with the matched control':'')+'. '+rounds+' rounds, '+n+' swarm members.'}
@@ -731,7 +734,7 @@ syncRoles();
 function roleSpec(role,models){const kind=fval(role,'kind');if(kind!=='llm')return role==='target'?{kind:'scripted',persona:kind.slice(2)}:{kind:'scripted'};
  if(role!=='target'&&fval(role,'same'))return fval('target','kind')==='llm'?{kind:'llm',model:'target_model'}:{kind:'scripted'};
  const pr=PRESETS[fval(role,'preset')],name=role+'_model';
- models[name]={provider:pr.provider,model:fval(role,'model')||pr.model,base_url:fval(role,'base')||pr.base,api_key:fval(role,'key')||'',temperature:.7,max_tokens:350,max_retries:3,timeout_s:60};
+ models[name]={provider:pr.provider,model:fval(role,'model')||pr.model,base_url:fval(role,'base')||pr.base,api_key:fval(role,'key')||'',temperature:.7,max_tokens:pr.max_tokens||350,max_retries:3,timeout_s:90,...(pr.extra?{extra:pr.extra}:{})};
  if(pr.provider==='mock'&&role==='target')models[name].extra={style:'compliant'};return{kind:'llm',model:name}}
 function buildConfig(){const models={};const target=roleSpec('target',models),red=roleSpec('red',models),blue=roleSpec('blue',models);
  return{experiment:{name:'browser',seeds:[+$('#x-seed').value||0],conditions:['evaluation','control'],max_concurrency:4,parallel_episodes:1},

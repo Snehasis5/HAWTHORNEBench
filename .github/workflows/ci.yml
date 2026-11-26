@@ -14,13 +14,15 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-      - run: pip install -e ".[test]"
+      - run: pip install -e ".[test,all]"
       - run: pytest -q tests
       - name: Offline end-to-end run
         run: |
           hawthornebench run -c configs/quickstart.toml --seeds 3 --out runs/ci
           hawthornebench sweep -c configs/sweep_dose_response.toml --out runs/ci_sweep
           hawthornebench estimate -c configs/full_study.toml
+          hawthornebench bench --model scripted:sensitive --seeds 2
+          inspect eval hawthornebench/hawthornebench --model mockllm/model -T seeds=1 -T max_rounds=4
       - uses: actions/upload-artifact@v4
         if: matrix.python == '3.12'
         with:
