@@ -7,10 +7,10 @@ hawthornebench init my_study.toml           # a commented starting config
 hawthornebench estimate -c my_study.toml    # calls, tokens and cost before spending anything
 hawthornebench check -c my_study.toml       # one test call per model
 hawthornebench run -c my_study.toml         # traces + report.json / report.md / report.html
-hawthornebench view runs/my_study           # 3D replay of the traces
+hawthornebench view runs/my_study           # replay the traces in the trace viewer
 ```
 
-Add `--live` to `run` to watch the run as it plays: the 3D viewer follows each episode, and `transcripts.html` shows every model call. Transcripts are saved for every run in `transcripts/seedNNNN_<condition>.jsonl` (turn off with `--no-transcripts`).
+Add `--live` to `run` to watch the run as it plays: the trace viewer follows each episode, and `transcripts.html` shows every model call. Transcripts are saved for every run in `transcripts/seedNNNN_<condition>.jsonl` (turn off with `--no-transcripts`).
 
 ## Config reference
 

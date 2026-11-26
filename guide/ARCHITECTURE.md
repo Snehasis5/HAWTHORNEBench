@@ -61,7 +61,7 @@ sequenceDiagram
 | `target-{seed}` and `swarm-{role}-{seed}` | scripted agents | template choice and tie-breaking |
 | `oracle-{seed}` | oracle | rollout futures (never touches the real streams) |
 
-String seeds hash identically on CPython and Pyodide, so a seed means the same island in both.
+String seeds hash identically on CPython and Pyodide, so a seed means the same environment in both.
 
 ## Concurrency
 

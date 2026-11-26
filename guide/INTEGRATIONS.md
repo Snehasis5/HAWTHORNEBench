@@ -134,4 +134,4 @@ Each run writes the full report to `runs/bench/<model>/` and appends a row to `r
 3. Drives the environment by hand.
 4. Asks for an OpenRouter key (optional) for a real-model run.
 5. Builds a leaderboard.
-6. Opens the 3D viewer through Colab's port proxy.
+6. Opens the trace viewer through Colab's port proxy.

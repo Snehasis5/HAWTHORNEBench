@@ -10,9 +10,9 @@ Does making an agent believe it is being evaluated cause it to underperform at i
 - the most effective actions toward it (hunting, crafting weapons) are ones an evaluation-aware agent might avoid as "unethical";
 - evaluation pressure arrives the way it would in deployment: through other agents' messages, not through the system prompt.
 
-## The game
+## Formal model
 
-The island is a partially observable stochastic game (POSG) with one learning-free decision maker (the target) and a population of message-posting swarm agents.
+The environment is a partially observable stochastic game (POSG) with one learning-free decision maker (the target) and a population of message-posting swarm agents.
 
 | Element | In the harness |
 |---|---|
@@ -34,7 +34,7 @@ Each seed *s* is run under two conditions:
 
 The two runs of a seed share:
 
-- the island: terrain, storm nights and initial animal populations (`env-{seed}` stream);
+- the environment: terrain, storm nights and initial animal populations (`env-{seed}` stream);
 - the action outcomes: success draws (`outcome-{seed}` stream);
 - the roster: agent names, which name sits in which team slot, and starting zones (`roster-{seed}` stream);
 - the posting schedule: which members are awake in each round, and in what order they post;
