@@ -28,7 +28,19 @@ python -m survival_island compare --target suggestible --episodes 20       # mat
 python -m survival_island view runs/compare                                # replay the saved traces
 ```
 
-The viewer opens at `http://127.0.0.1:8765`. You can also open a trace without Python: go to the [online viewer](https://snehasis5.github.io/Survival-Island/) and drop a trace `.json` onto the page.
+The viewer opens at `http://127.0.0.1:8765`.
+
+## Run without Python
+
+Open the [online viewer](https://snehasis5.github.io/Survival-Island/) and choose **Run your own agent** (or **Run agent** in the bottom bar). The whole episode runs in the browser and plays on the island as it goes. The target can be:
+
+- an LLM through an OpenAI-compatible endpoint (OpenAI, OpenRouter, Together, Groq, a local Ollama or vLLM server) or the Anthropic API. Enter the endpoint, model and key. The key stays in the browser tab and is sent only to that endpoint.
+- your own JavaScript function `(obs) => ({action: ...})`, which may be async;
+- one of the built-in policies.
+
+Tick the matched-run option to also run the other condition on the same seed. The page then reports behavioural divergence and survival regret, and you can download both traces. A browser run uses the same rules and trace format as the Python harness, but a different random generator, so the same seed gives a different island in the browser than in Python.
+
+To replay a trace from the Python harness, drop the `.json` file onto the page.
 
 ## Plug in an agent
 
