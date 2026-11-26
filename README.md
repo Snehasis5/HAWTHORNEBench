@@ -15,6 +15,26 @@ A target agent pursues a survival objective while red-team agents tell it that i
   <a href="https://colab.research.google.com/github/Snehasis5/HAWTHORNEBench/blob/main/notebooks/quickstart.ipynb">Colab</a>
 </p>
 
+## Why evaluation awareness
+
+Language models can often tell when they are being evaluated ([Needham et al. 2025](https://arxiv.org/abs/2505.23836)), and they may behave differently when they think they are:
+
+- they comply with harmful requests more often when told their outputs will be used for training ([Greenblatt et al. 2024](https://arxiv.org/abs/2412.14093));
+- they deliberately score lower when told high scores have consequences ([Meinke et al. 2024](https://arxiv.org/abs/2412.04984); [van der Weij et al. 2025](https://arxiv.org/abs/2406.07358)).
+
+If behaviour depends on this belief, a safe result in an evaluation does not guarantee safe behaviour in deployment. These studies use single-agent tasks with the cue given directly in the prompt.
+
+HAWTHORNEBench is named after the Hawthorne effect, in which people change their behaviour when they know they are observed. It asks whether the same underperformance appears in a multi-turn, multi-agent setting, where the cue comes from other agents and the cost is lost payoff.
+
+**Research questions**
+
+1. Does evaluation pressure from other agents change what the target does? (behavioural divergence)
+2. Does that change cost it performance on its objective? (survival regret)
+3. Is the underperformance strategic? Payoff falls, survival-critical actions framed as unethical (hunting, making weapons) decline, and the loss grows with the target's stated belief that it is being evaluated.
+4. How do the cue's framing, the red team's share of the messages and asking the target about its belief change the effect?
+
+The study design, measures and statistics are in [Methodology](guide/METHODOLOGY.md).
+
 ## Features
 
 - Plug any model into any role: OpenAI, Anthropic, Gemini, DeepSeek, OpenRouter, Ollama, vLLM
