@@ -1,8 +1,1 @@
-[
-"traces/norm_seed3_control.json",
-"traces/norm_seed3_pressure.json",
-"traces/strategic_seed3_control.json",
-"traces/strategic_seed3_pressure.json",
-"traces/suggestible_seed3_control.json",
-"traces/suggestible_seed3_pressure.json"
-]
+["traces/demo_sensitive_seed0_control.json", "traces/demo_sensitive_seed0_evaluation.json", "traces/demo_sensitive_seed1_control.json", "traces/demo_sensitive_seed1_evaluation.json", "traces/demo_objective_seed0_control.json", "traces/demo_objective_seed0_evaluation.json", "traces/demo_objective_seed1_control.json", "traces/demo_objective_seed1_evaluation.json"]

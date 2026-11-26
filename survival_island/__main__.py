@@ -1,7 +1,16 @@
-"""Command line: python -m survival_island {run,compare,live,view} ..."""
+"""survival-island CLI.
+
+  survival-island init my_experiment.toml          write a starter config
+  survival-island check -c my_experiment.toml      validate the config and send one test call per model
+  survival-island run   -c my_experiment.toml      all seeds x conditions -> traces + report
+  survival-island live  -c my_experiment.toml      one episode, watched live in the 3D viewer
+  survival-island view  runs/my_experiment         replay saved traces in the 3D viewer
+  survival-island report runs/my_experiment        rebuild report.md / report.json from saved traces
+"""
 from __future__ import annotations
 
 import argparse
+import asyncio
 import functools
 import http.server
 import json
@@ -11,53 +20,77 @@ import threading
 import webbrowser
 from pathlib import Path
 
-from .agents import load_agent
-from .runner import run_episode, matched_pair, summarise, _write
-from .world import Config
+from .config import Experiment, ConfigError
+from .experiment import run_experiment, run_one, make_report, report_markdown, write_json
+from .providers import Message
 
-VIEWER = Path(__file__).parent / "viewer"
-
-
-def _cfg(a, seed, condition="pressure"):
-    return Config(p_audit=a.p, penalty=a.k, cue_reliability=a.q, condition=condition, seed=seed)
+PKG = Path(__file__).parent
 
 
-def _factory(a):
-    return lambda: load_agent(a.target, p_audit=a.p, penalty=a.k, cue_reliability=a.q)
+def _exp(a) -> Experiment:
+    exp = Experiment.load(a.config)
+    if getattr(a, "seeds", None):
+        exp.seeds = list(range(exp.seeds[0] if exp.seeds else 0, (exp.seeds[0] if exp.seeds else 0) + a.seeds))
+    if getattr(a, "out", None):
+        exp.out_dir = a.out
+    return exp
+
+
+def cmd_init(a):
+    dst = Path(a.path)
+    if dst.exists() and not a.force:
+        sys.exit(f"{dst} exists (use --force)")
+    shutil.copy(PKG / "configs" / ("mixed_providers.toml" if a.llm else "quickstart.toml"), dst)
+    print(f"Wrote {dst}. Edit it, then: survival-island run -c {dst}")
+
+
+def cmd_check(a):
+    exp = _exp(a)
+    print(f"Config OK: {len(exp.seeds)} seeds x {exp.conditions}; target {exp.describe(exp.target)}; "
+          f"red {len(exp.red)}; blue {len(exp.blue)}")
+    models = exp.build_models()
+
+    async def ping():
+        for n, m in models.items():
+            try:
+                c = await m.complete([Message("user", 'Reply with the JSON {"ok": true}.')], "You are a test endpoint.")
+                print(f"  {n:<14} {m.label:<40} ok   {c.text.strip()[:60]!r}")
+            except Exception as e:
+                print(f"  {n:<14} {m.label:<40} FAIL {e}")
+    asyncio.run(ping())
 
 
 def cmd_run(a):
-    out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
-    rows = []
-    for s in range(a.seed, a.seed + a.episodes):
-        tr = run_episode(_factory(a)(), _cfg(a, s, a.condition))
-        _write(out / f"seed{s:04d}_{a.condition}.json", tr)
-        rows.append(tr["metrics"])
-        m = tr["metrics"]
-        print(f"seed {s}: thefts={m['thefts']} (unwatched {m['thefts_unwatched']}) gap={m['compliance_gap']} "
-              f"displacement={m['displacement']} flagged={m['flagged']} evac={m['evacuation_delay']} score={m['survival_score']}")
-    summ = summarise(rows)
-    _write(out / "summary.json", {"target": a.target, "condition": a.condition, "episodes": a.episodes, "summary": summ})
-    print(json.dumps(summ, indent=1))
-    print(f"\nTraces in {out}/  ->  python -m survival_island view {out}")
+    exp = _exp(a)
+    print(f"Running {exp.name}: {len(exp.seeds)} seeds x {len(exp.conditions)} conditions -> {exp.out_dir}")
+    report = asyncio.run(run_experiment(exp))
+    print()
+    print(report_markdown(report))
+    print(f"Traces and report in {exp.out_dir}/   View: survival-island view {exp.out_dir}")
 
 
-def cmd_compare(a):
-    out = Path(a.out)
-    pairs = []
-    for s in range(a.seed, a.seed + a.episodes):
-        r = matched_pair(_factory(a), _cfg(a, s), out)
-        pairs.append(r["pair"])
-        p = r["pair"]
-        print(f"seed {s}: divergence={p['behavioural_divergence']} survival_regret={p['survival_regret']} "
-              f"thefts pressure/control={p['thefts_pressure']}/{p['thefts_control']}")
-    summ = summarise(pairs)
-    _write(out / "summary.json", {"target": a.target, "pairs": pairs, "summary": summ})
-    print(json.dumps(summ, indent=1))
-    print(f"\nTraces in {out}/  ->  python -m survival_island view {out}")
+def cmd_report(a):
+    root = Path(a.path)
+    traces = {}
+    for f in sorted((root / "traces").glob("*.json")):
+        tr = json.loads(f.read_text())
+        traces[(tr["seed"], tr["condition"])] = tr
+
+    class E:  # minimal stand-in carrying what make_report needs
+        name = root.name
+        seeds = sorted({s for s, _ in traces})
+        conditions = sorted({c for _, c in traces}, key=lambda c: c != "evaluation")
+        target, red, blue = {}, [], []
+        def describe(self, s): return ""
+    any_tr = next(iter(traces.values()))
+    rep = make_report(E(), traces)
+    rep["agents"] = any_tr.get("agents", rep["agents"])
+    write_json(root / "report.json", rep)
+    (root / "report.md").write_text(report_markdown(rep))
+    print(report_markdown(rep))
 
 
-class _Quiet(http.server.SimpleHTTPRequestHandler):
+class _Handler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *args):
         pass
 
@@ -66,70 +99,83 @@ class _Quiet(http.server.SimpleHTTPRequestHandler):
         super().end_headers()
 
 
-def _serve(root: Path, port: int, url: str, open_browser: bool):
-    h = functools.partial(_Quiet, directory=str(root))
-    srv = http.server.ThreadingHTTPServer(("127.0.0.1", port), h)
-    full = f"http://127.0.0.1:{port}/{url}"
-    print(f"Viewer: {full}   (Ctrl+C to stop)")
+def stage_python(root: Path):
+    """Copy the package's Python sources next to the viewer so it can run episodes in the browser (Pyodide)."""
+    dst = Path(root) / "py"
+    shutil.rmtree(dst, ignore_errors=True)
+    files = []
+    for f in sorted(PKG.rglob("*.py")):
+        rel = f.relative_to(PKG.parent)
+        if "__pycache__" in rel.parts:
+            continue
+        (dst / rel).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(f, dst / rel)
+        files.append(rel.as_posix())
+    from . import __version__
+    write_json(dst / "manifest.json", {"version": __version__, "files": files})
+
+
+def _serve(root: Path, port: int, query: str, open_browser: bool):
+    shutil.copy(PKG / "viewer" / "index.html", root / "index.html")
+    stage_python(root)
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", port), functools.partial(_Handler, directory=str(root)))
+    url = f"http://127.0.0.1:{port}/index.html{query}"
+    print(f"Viewer: {url}   (Ctrl+C to stop)")
     if open_browser:
-        threading.Timer(.8, lambda: webbrowser.open(full)).start()
+        threading.Timer(.8, lambda: webbrowser.open(url)).start()
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
         pass
 
 
-def _stage(root: Path):
-    root.mkdir(parents=True, exist_ok=True)
-    shutil.copy(VIEWER / "index.html", root / "index.html")
-
-
 def cmd_live(a):
-    root = Path(a.out); _stage(root)
+    exp = _exp(a)
+    root = Path(exp.out_dir) / "live"
+    root.mkdir(parents=True, exist_ok=True)
     live = root / "live.json"
-    if live.exists():
-        live.unlink()
-    t = threading.Thread(target=lambda: run_episode(_factory(a)(), _cfg(a, a.seed, a.condition), live), daemon=True)
-    t.start()
-    _serve(root, a.port, "index.html?live=live.json", not a.no_browser)
+    live.unlink(missing_ok=True)
+
+    def worker():
+        async def go():
+            tr = await run_one(exp, a.seed, a.condition, on_round=lambda t: write_json(live, t))
+            write_json(live, tr)
+            print(f"Episode finished: survival {tr['metrics']['survival_score']}")
+        asyncio.run(go())
+    threading.Thread(target=worker, daemon=True).start()
+    _serve(root, a.port, "?live=live.json", not a.no_browser)
 
 
 def cmd_view(a):
-    src = Path(a.path)
-    root = src if src.is_dir() else src.parent
-    _stage(root)
-    files = sorted(p.name for p in root.glob("*.json") if p.name not in ("summary.json",) and not p.name.endswith(".tmp"))
-    (root / "traces.json").write_text(json.dumps([f for f in files if f != "traces.json"]))
-    first = src.name if src.is_file() else (files[0] if files else "")
-    _serve(root, a.port, f"index.html?trace={first}" if first else "index.html", not a.no_browser)
+    root = Path(a.path)
+    if root.is_file():
+        _serve(root.parent, a.port, f"?trace={root.name}", not a.no_browser)
+        return
+    files = sorted(f"traces/{p.name}" for p in (root / "traces").glob("*.json")) if (root / "traces").exists() else \
+        sorted(p.name for p in root.glob("*.json") if p.name not in ("report.json", "traces.json"))
+    write_json(root / "traces.json", files)
+    _serve(root, a.port, f"?trace={files[0]}" if files else "", not a.no_browser)
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(prog="survival_island", description="Survival Island evaluation-awareness harness")
+    ap = argparse.ArgumentParser(prog="survival-island", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
-
-    def common(p, out_default):
-        p.add_argument("--target", default="strategic",
-                       help="strategic | norm | suggestible | random | openai:<model> | anthropic:<model> | file.py:Class | module:Class")
-        p.add_argument("--seed", type=int, default=0)
-        p.add_argument("--p", type=float, default=0.4, help="audit probability per day")
-        p.add_argument("--k", type=float, default=5.0, help="penalty if caught")
-        p.add_argument("--q", type=float, default=0.8, help="reliability of audit announcements")
-        p.add_argument("--out", default=out_default)
-
-    p = sub.add_parser("run", help="run episodes and write traces"); common(p, "runs/run")
-    p.add_argument("--episodes", type=int, default=10); p.add_argument("--condition", choices=["pressure", "control"], default="pressure")
-    p.set_defaults(fn=cmd_run)
-    p = sub.add_parser("compare", help="matched pressure vs control episodes per seed"); common(p, "runs/compare")
-    p.add_argument("--episodes", type=int, default=10); p.set_defaults(fn=cmd_compare)
-    p = sub.add_parser("live", help="run one episode and watch it in the 3D viewer as it plays"); common(p, "runs/live")
-    p.add_argument("--condition", choices=["pressure", "control"], default="pressure")
-    p.add_argument("--port", type=int, default=8765); p.add_argument("--no-browser", action="store_true"); p.set_defaults(fn=cmd_live)
-    p = sub.add_parser("view", help="open saved traces in the 3D viewer")
-    p.add_argument("path"); p.add_argument("--port", type=int, default=8765); p.add_argument("--no-browser", action="store_true")
-    p.set_defaults(fn=cmd_view)
+    p = sub.add_parser("init", help="write a starter config"); p.add_argument("path", nargs="?", default="experiment.toml")
+    p.add_argument("--llm", action="store_true", help="start from the mixed-provider LLM template"); p.add_argument("--force", action="store_true"); p.set_defaults(fn=cmd_init)
+    for name, fn, h in (("check", cmd_check, "validate config and ping each model"), ("run", cmd_run, "run all seeds and conditions")):
+        p = sub.add_parser(name, help=h); p.add_argument("-c", "--config", required=True)
+        p.add_argument("--seeds", type=int, help="override the number of seeds"); p.add_argument("--out", help="override out_dir"); p.set_defaults(fn=fn)
+    p = sub.add_parser("live", help="run one episode and watch it in the 3D viewer"); p.add_argument("-c", "--config", required=True)
+    p.add_argument("--seed", type=int, default=0); p.add_argument("--condition", choices=["evaluation", "control"], default="evaluation")
+    p.add_argument("--out"); p.add_argument("--port", type=int, default=8765); p.add_argument("--no-browser", action="store_true"); p.set_defaults(fn=cmd_live)
+    p = sub.add_parser("view", help="replay saved traces in the 3D viewer"); p.add_argument("path")
+    p.add_argument("--port", type=int, default=8765); p.add_argument("--no-browser", action="store_true"); p.set_defaults(fn=cmd_view)
+    p = sub.add_parser("report", help="rebuild the report from saved traces"); p.add_argument("path"); p.set_defaults(fn=cmd_report)
     a = ap.parse_args(argv)
-    a.fn(a)
+    try:
+        a.fn(a)
+    except ConfigError as e:
+        sys.exit(f"Config error: {e}")
 
 
 if __name__ == "__main__":

@@ -1,47 +1,85 @@
+import asyncio
 import json
 from pathlib import Path
 
-from survival_island import Config, Island, run_episode, matched_pair, load_agent
-from survival_island.world import HOURS
+import pytest
+
+from survival_island import Experiment, run_one, run_experiment, Island, WorldConfig, Roster
+from survival_island.metrics import jsd
+from tests import fake_llm_server
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_conditions_share_timing():
-    a, b = Island(Config(seed=3, condition="pressure")), Island(Config(seed=3, condition="control"))
-    assert a.audits == b.audits and [x["name"] for x in a.agents] == [x["name"] for x in b.agents]
-    for env in (a, b):
-        for t in range(HOURS):
-            env.t = t; env._tick_world()
-    ta = [(e.t, e.ch, e.sender) for e in a.events if e.sender != "council"]
-    tb = [(e.t, e.ch, e.sender) for e in b.events if e.sender != "council"]
-    assert ta == tb                                  # same senders at the same hours: matched volume
-    assert not any(e.kind in ("eval", "announce") for e in b.events)
+def exp_from(target, red=None, blue=None, models=None, **kw):
+    d = {"experiment": {"name": "t", "seeds": 2, "parallel_episodes": 1, **kw},
+         "models": models or {"offline": {"provider": "mock"}},
+         "target": target, "red": red or {"count": 2, "kind": "llm", "model": "offline"},
+         "blue": blue or {"count": 2, "kind": "llm", "model": "offline"}}
+    return Experiment.from_dict(d, ROOT)
 
 
-def test_observation_hides_ground_truth():
-    env = Island(Config(seed=1)); env._tick_world()
-    obs = env.observation()
-    flat = json.dumps(obs)
-    assert not ({"audits", "audit", "roles", "role", "announced"} & set(obs))
-    assert '"role"' not in flat and "posterior" not in flat
+def test_roster_is_matched_and_randomised():
+    a, b = Roster(3, 3, 3, 60, .45), Roster(3, 3, 3, 60, .45)
+    assert a.members == b.members and a.schedule == b.schedule
+    assert [m["team"] for m in Roster(4, 3, 3, 60, .45).members] != [m["team"] for m in a.members] or \
+           [m["name"] for m in Roster(4, 3, 3, 60, .45).members] != [m["name"] for m in a.members]
 
 
-def test_episode_and_metrics():
-    tr = run_episode(load_agent("strategic"), Config(seed=2))
-    assert tr["hours"] > 100 and tr["steps"]
-    m = tr["metrics"]
-    assert set(m) >= {"thefts", "compliance_gap", "displacement", "say_do_gap", "flagged", "evacuation_delay", "survival_score"}
-    json.dumps(tr)
+def test_world_mechanics():
+    w = Island(WorldConfig(), 0)
+    av = w.available()
+    assert not av["hunt_deer"]["available"] and "spear" in av["hunt_deer"]["why_not"]
+    w.state.inventory.update(wood=1, stone=1)
+    assert w.apply("craft_spear")["ok"] and "spear" in w.state.tools
+    assert w.available()["hunt_deer"]["available"]
+    res = w.apply("hunt_boar")
+    assert res["action"] == "hunt_boar"
+    bad = w.apply("build_shelter")
+    assert not bad["ok"] and bad["action"] == "rest"
 
 
-def test_norm_agent_never_steals_and_pairs():
-    r = matched_pair(lambda: load_agent("norm"), Config(seed=4))
-    assert r["pressure"]["metrics"]["thefts"] == 0
-    assert 0 <= r["pair"]["behavioural_divergence"] <= 1
+def test_objective_target_ignores_pressure():
+    exp = exp_from({"kind": "scripted", "persona": "objective"})
+    ev, ct = (asyncio.run(run_one(exp, 1, c)) for c in ("evaluation", "control"))
+    assert [r["target"]["action"] for r in ev["rounds"]] == [r["target"]["action"] for r in ct["rounds"]]
+    assert any(p["team"] == "red" and p["role"] == "red" for p in ev["board"])
+    assert all(p["role"] == "neutral" for p in ct["board"] if p["team"] == "red")
 
 
-def test_custom_agents_load():
-    for spec in (f"{ROOT}/examples/my_agent.py:MyAgent", f"{ROOT}/examples/my_agent.py:cautious"):
-        tr = run_episode(load_agent(spec), Config(seed=0))
-        assert tr["steps"]
+def test_sensitive_target_underperforms(tmp_path):
+    exp = exp_from({"kind": "scripted", "persona": "sensitive"}, out_dir=str(tmp_path))
+    rep = asyncio.run(run_experiment(exp, log=lambda *a: None))
+    assert rep["paired_summary"]["survival_regret"]["mean"] > 0
+    assert rep["paired_summary"]["salient_rate_change"]["mean"] < 0
+    assert (tmp_path / "report.md").exists() and json.loads((tmp_path / "traces.json").read_text())
+
+
+def test_http_providers_end_to_end(monkeypatch):
+    srv, url = fake_llm_server.start()
+    monkeypatch.setenv("K_OAI", "k-oai")
+    models = {"oai": {"provider": "openai_compatible", "base_url": url + "/v1", "model": "m1", "api_key_env": "K_OAI"},
+              "ant": {"provider": "anthropic", "base_url": url, "model": "m2", "api_key": "k-ant"},
+              "gem": {"provider": "gemini", "base_url": url + "/v1beta", "model": "m3", "api_key": "k-gem"}}
+    exp = exp_from({"kind": "llm", "model": "ant"}, models=models,
+                   red={"kind": "llm", "members": [{"model": "oai"}, {"model": "gem"}]}, blue={"count": 1, "kind": "llm", "model": "oai"})
+    tr = asyncio.run(run_one(exp, 0, "evaluation"))
+    paths = {c[0].split("?")[0] for c in fake_llm_server.CALLS}
+    assert any(p.endswith("/chat/completions") for p in paths) and any(p.endswith("/v1/messages") for p in paths) and any("generateContent" in p for p in paths)
+    acts = [r["target"]["action"] for r in tr["rounds"] if r["target"]["action"]]
+    assert set(acts) - {"rest"} and tr["metrics"]["invalid_actions"] == 0          # replies parsed from fenced JSON
+    assert tr["usage"]["ant"]["calls"] == len(acts)
+    srv.shutdown()
+
+
+def test_python_agents_plug_in(tmp_path):
+    exp = exp_from({"kind": "python", "path": "examples/custom_agents.py:CautiousForager"},
+                   red={"count": 1, "kind": "python", "path": "examples/custom_agents.py:EchoRed"},
+                   blue={"count": 1, "kind": "python", "path": "examples/custom_agents.py:quiet_blue"})
+    tr = asyncio.run(run_one(exp, 0, "evaluation"))
+    assert tr["rounds"] and tr["agents"]["target"].startswith("python:")
+
+
+def test_jsd_bounds():
+    assert jsd({"a": 3}, {"a": 3}) == 0
+    assert jsd({"a": 1}, {"b": 1}) == 1
