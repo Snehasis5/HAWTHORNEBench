@@ -295,4 +295,3 @@ schemas/trace.schema.json         trace format
 examples/custom_agents.py         plug-in examples for every role
 ```
 
-Built for the ANTHROLOGOS workshop (AAAI 2027) proposal *Does Evaluation Awareness Make Models Deliberately Underperform?*
