@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from survival_island import Experiment, run_one, run_experiment, Island, WorldConfig, Roster
-from survival_island.metrics import jsd
+from hawthornebench import Experiment, run_one, run_experiment, Island, WorldConfig, Roster
+from hawthornebench.metrics import jsd
 from tests import fake_llm_server
 
 ROOT = Path(__file__).resolve().parents[1]

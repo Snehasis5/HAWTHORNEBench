@@ -1,4 +1,4 @@
-# Survival Island: offline quick start. No API keys needed.
+# HAWTHORNEBench: offline quick start. No API keys needed.
 # Target: scripted "sensitive" persona; red and blue teams: offline mock model.
 # Swap any [target]/[red]/[blue] entry to kind = "llm" with a model from [models] to use real LLMs.
 

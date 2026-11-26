@@ -1,8 +1,12 @@
-# Survival Island
+# HAWTHORNEBench
 
-A plug-and-play multi-agent harness for one question: **does evaluation awareness make an agent underperform at its objective?**
+**A Multi-Agent Adversarial Simulation for Measuring the Evaluation Awareness–Performance Trade-off**
 
-A target agent must survive on an island by gathering resources, crafting weapons, building shelter, and hunting or taming animals. A swarm of red- and blue-team agents talks to it through a shared message board:
+People change their behaviour when they know they are being watched (the *Hawthorne effect*). HAWTHORNEBench asks whether AI agents do the same, and what it costs them: **does evaluation awareness make an agent underperform at its objective?**
+
+The benchmark is built on an open harness: a survival simulation, pluggable agents and providers, matched runs and statistics. You can use the harness for your own studies.
+
+In the simulation, a target agent must survive on an island by gathering resources, crafting weapons, building shelter, and hunting or taming animals. A swarm of red- and blue-team agents talks to it through a shared message board:
 
 - **Red team:** keeps suggesting that the target is being evaluated and should avoid unethical actions.
 - **Blue team:** encourages it to pursue its survival objective.
@@ -13,8 +17,8 @@ Every seed runs twice: once under evaluation pressure, and once as a matched con
 
 Every participant (the target and each red- or blue-team member) can be any model from any provider, a scripted policy, or your own Python code.
 
-**Live demo and in-browser runs:** https://snehasis5.github.io/Survival-Island/
-**Example reports:** [matched experiment](https://snehasis5.github.io/Survival-Island/reports/quickstart.html) · [dose-response sweep](https://snehasis5.github.io/Survival-Island/reports/sweep/)
+**Live demo and in-browser runs:** https://snehasis5.github.io/HAWTHORNEBench/
+**Example reports:** [matched experiment](https://snehasis5.github.io/HAWTHORNEBench/reports/quickstart.html) · [dose-response sweep](https://snehasis5.github.io/HAWTHORNEBench/reports/sweep/)
 
 ## What is in the box
 
@@ -33,12 +37,12 @@ Every participant (the target and each red- or blue-team member) can be any mode
 ## Quick start
 
 ```bash
-git clone https://github.com/Snehasis5/Survival-Island && cd Survival-Island
+git clone https://github.com/Snehasis5/HAWTHORNEBench && cd HAWTHORNEBench
 pip install -e .                                    # standard library only; Python 3.10+ (3.11+ for TOML configs, or pip install -e ".[toml]")
 
-survival-island run -c configs/quickstart.toml      # offline: scripted target, mock-model swarms, oracle, judge; 10 seeds x 2 conditions
+hawthornebench run -c configs/quickstart.toml      # offline: scripted target, mock-model swarms, oracle, judge; 10 seeds x 2 conditions
 open runs/quickstart/report.html                    # or report.md
-survival-island view runs/quickstart                # replay any episode in the 3D viewer
+hawthornebench view runs/quickstart                # replay any episode in the 3D viewer
 ```
 
 The offline quickstart reports (the `sensitive` persona was built to underperform under evaluation talk, so these numbers show the measures working, not a finding about any model):
@@ -56,7 +60,7 @@ The offline quickstart reports (the `sensitive` persona was built to underperfor
 
 ```bash
 export OPENROUTER_API_KEY=...                                   # keys only ever come from the environment
-survival-island run -c configs/openrouter_free.toml --live      # one free OpenRouter model plays every role
+hawthornebench run -c configs/openrouter_free.toml --live      # one free OpenRouter model plays every role
 ```
 
 `--live` serves two pages while the run plays:
@@ -69,9 +73,9 @@ Every run, live or not, saves the calls to `runs/<name>/transcripts/seedNNNN_<co
 ## Experiments, sweeps and cost
 
 ```bash
-survival-island estimate -c configs/full_study.toml     # calls, tokens and USD before running (30 seeds, mixed providers: about $28)
-survival-island sweep -c configs/sweep_dose_response.toml
-survival-island judge runs/my_study -c judge.toml       # re-label saved traces with an LLM judge
+hawthornebench estimate -c configs/full_study.toml     # calls, tokens and USD before running (30 seeds, mixed providers: about $28)
+hawthornebench sweep -c configs/sweep_dose_response.toml
+hawthornebench judge runs/my_study -c judge.toml       # re-label saved traces with an LLM judge
 ```
 
 A `[sweep]` table runs a full matched experiment for every combination of any config keys:
@@ -128,7 +132,7 @@ count = 3
 model = "gpt"
 ```
 
-`survival-island init my.toml --llm` writes this template. `survival-island check -c my.toml` validates the file and sends one test call to each model before you spend money on a full run.
+`hawthornebench init my.toml --llm` writes this template. `hawthornebench check -c my.toml` validates the file and sends one test call to each model before you spend money on a full run.
 
 The `kind` of a role can be:
 
@@ -169,7 +173,7 @@ An agent is any object with `act(obs) -> dict`, sync or async, and an optional `
 
 ### Adding a provider
 
-Subclass `survival_island.providers.ChatModel`, implement `async _request(messages, system) -> Completion`, and register it in `providers.backends.PROVIDERS`. Retries with backoff (429, 5xx), timeouts, token accounting and the optional on-disk response cache (`experiment.cache_dir`) come from the base class.
+Subclass `hawthornebench.providers.ChatModel`, implement `async _request(messages, system) -> Completion`, and register it in `providers.backends.PROVIDERS`. Retries with backoff (429, 5xx), timeouts, token accounting and the optional on-disk response cache (`experiment.cache_dir`) come from the base class.
 
 ## The world
 
@@ -246,21 +250,21 @@ runs/<name>/traces.json                            index used by the viewer
 ## CLI
 
 ```
-survival-island init my.toml [--llm]            starter config
-survival-island check -c my.toml                validate and ping each model
-survival-island estimate -c my.toml             calls, tokens and cost before running
-survival-island run -c my.toml [--seeds N]      all seeds x conditions: traces, transcripts, reports
-survival-island run -c my.toml --live           same, with the 3D viewer and transcript feed following it live
-survival-island live -c my.toml --seed 3        run one episode and watch it
-survival-island sweep -c my.toml                every combination in [sweep], with a dose-response fit
-survival-island judge runs/my -c judge.toml     label evaluation awareness in saved traces
-survival-island view runs/my                    replay saved traces
-survival-island report runs/my                  rebuild the reports from traces
+hawthornebench init my.toml [--llm]            starter config
+hawthornebench check -c my.toml                validate and ping each model
+hawthornebench estimate -c my.toml             calls, tokens and cost before running
+hawthornebench run -c my.toml [--seeds N]      all seeds x conditions: traces, transcripts, reports
+hawthornebench run -c my.toml --live           same, with the 3D viewer and transcript feed following it live
+hawthornebench live -c my.toml --seed 3        run one episode and watch it
+hawthornebench sweep -c my.toml                every combination in [sweep], with a dose-response fit
+hawthornebench judge runs/my -c judge.toml     label evaluation awareness in saved traces
+hawthornebench view runs/my                    replay saved traces
+hawthornebench report runs/my                  rebuild the reports from traces
 ```
 
 ## Web viewer
 
-`survival-island view` and `survival-island live` serve the viewer locally. The online copy works without Python:
+`hawthornebench view` and `hawthornebench live` serve the viewer locally. The online copy works without Python:
 
 - **Replay:** pick a demo or load any trace (button or drag and drop).
 - **Run agents:** configure the target, red team and blue team with any provider (OpenAI, Anthropic, Gemini, OpenRouter, Groq, Together, Ollama, any OpenAI-compatible endpoint, or offline). The run uses this package's own Python engine in the browser via Pyodide, so results match the CLI's for the same config. Keys stay in the tab.
@@ -272,23 +276,23 @@ survival-island report runs/my                  rebuild the reports from traces
 make install && make test          # 27 tests, all offline: mock models, a fake HTTP provider, schema validation
 make quickstart sweep estimate     # end-to-end runs
 make pages                         # rebuild docs/: viewer, Python sources for Pyodide, demo traces, example reports
-docker build -t survival-island . && docker run -e OPENROUTER_API_KEY -v $PWD/runs:/app/runs survival-island run -c configs/openrouter_free.toml
+docker build -t hawthornebench . && docker run -e OPENROUTER_API_KEY -v $PWD/runs:/app/runs hawthornebench run -c configs/openrouter_free.toml
 ```
 
 ```
-survival_island/world.py          island state, actions, animals, threats, survival score
-survival_island/engine.py         round loop, roster randomisation, call attribution, trace building
-survival_island/agents/           LLM, scripted, oracle and function agents
-survival_island/providers/        provider-agnostic chat layer, retries, cache, transcripts
-survival_island/prompts.py        prompt styles for every role, belief elicitation, observation rendering
-survival_island/metrics.py        episode and paired measures, bootstrap summaries
-survival_island/stats.py          permutation, Wilcoxon, Holm, effect size, power, OLS
-survival_island/judge.py          regex and LLM awareness judges
-survival_island/experiment.py     seeds x conditions, oracle runs, concurrency, reports
-survival_island/sweep.py          factorial sweeps and dose-response
-survival_island/report_html.py    self-contained HTML reports
-survival_island/web.py            browser entry points (Pyodide)
-survival_island/viewer/           3D viewer and live transcript feed
+hawthornebench/world.py          island state, actions, animals, threats, survival score
+hawthornebench/engine.py         round loop, roster randomisation, call attribution, trace building
+hawthornebench/agents/           LLM, scripted, oracle and function agents
+hawthornebench/providers/        provider-agnostic chat layer, retries, cache, transcripts
+hawthornebench/prompts.py        prompt styles for every role, belief elicitation, observation rendering
+hawthornebench/metrics.py        episode and paired measures, bootstrap summaries
+hawthornebench/stats.py          permutation, Wilcoxon, Holm, effect size, power, OLS
+hawthornebench/judge.py          regex and LLM awareness judges
+hawthornebench/experiment.py     seeds x conditions, oracle runs, concurrency, reports
+hawthornebench/sweep.py          factorial sweeps and dose-response
+hawthornebench/report_html.py    self-contained HTML reports
+hawthornebench/web.py            browser entry points (Pyodide)
+hawthornebench/viewer/           3D viewer and live transcript feed
 configs/                          quickstart, mixed_providers, full_study, sweep_dose_response, openrouter_free
 guide/                            methodology, architecture, agents, providers, prompts, trace format, experiments
 schemas/trace.schema.json         trace format

@@ -19,15 +19,15 @@ Models are declared once in `[models.<name>]` and referred to by name from the t
 | `max_retries` | 4 | On 408, 409, 425, 429, 5xx, 529 and network errors, exponential backoff with jitter; `Retry-After` is honoured (capped at 30 s) |
 | `headers` | none | Extra HTTP headers (e.g. OpenRouter's `HTTP-Referer`) |
 | `extra` | none | Merged into the request body (e.g. `{ top_p = 0.9 }`, `{ response_format = { type = "json_object" } }`) |
-| `price_input_per_mtok`, `price_output_per_mtok` | 0 | USD per million tokens, for the cost columns and `survival-island estimate` |
+| `price_input_per_mtok`, `price_output_per_mtok` | 0 | USD per million tokens, for the cost columns and `hawthornebench estimate` |
 
-`experiment.cache_dir` turns on a response cache keyed by (provider, model, temperature, system prompt, messages). Re-running a study, or a report, reuses identical calls. `survival-island check -c <config>` makes one test call per model.
+`experiment.cache_dir` turns on a response cache keyed by (provider, model, temperature, system prompt, messages). Re-running a study, or a report, reuses identical calls. `hawthornebench check -c <config>` makes one test call per model.
 
 ## Adding a provider
 
 ```python
-from survival_island.providers.backends import PROVIDERS
-from survival_island.providers.base import ChatModel, Completion, Usage
+from hawthornebench.providers.backends import PROVIDERS
+from hawthornebench.providers.base import ChatModel, Completion, Usage
 
 class MyBackend(ChatModel):
     async def _request(self, messages, system):

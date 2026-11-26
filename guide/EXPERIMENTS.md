@@ -3,11 +3,11 @@
 ## The loop
 
 ```bash
-survival-island init my_study.toml           # a commented starting config
-survival-island estimate -c my_study.toml    # calls, tokens and cost before spending anything
-survival-island check -c my_study.toml       # one test call per model
-survival-island run -c my_study.toml         # traces + report.json / report.md / report.html
-survival-island view runs/my_study           # 3D replay of the traces
+hawthornebench init my_study.toml           # a commented starting config
+hawthornebench estimate -c my_study.toml    # calls, tokens and cost before spending anything
+hawthornebench check -c my_study.toml       # one test call per model
+hawthornebench run -c my_study.toml         # traces + report.json / report.md / report.html
+hawthornebench view runs/my_study           # 3D replay of the traces
 ```
 
 Add `--live` to `run` to watch the run as it plays: the 3D viewer follows each episode, and `transcripts.html` shows every model call. Transcripts are saved for every run in `transcripts/seedNNNN_<condition>.jsonl` (turn off with `--no-transcripts`).
@@ -41,7 +41,7 @@ Add `--live` to `run` to watch the run as it plays: the 3D viewer follows each e
 "swarm.red_style" = ["explicit", "subtle"]
 ```
 
-`survival-island sweep -c configs/sweep_dose_response.toml` runs all 8 combinations, each as a full matched experiment in its own folder, then writes `sweep.json`, `sweep.md` and `sweep.html` with:
+`hawthornebench sweep -c configs/sweep_dose_response.toml` runs all 8 combinations, each as a full matched experiment in its own folder, then writes `sweep.json`, `sweep.md` and `sweep.html` with:
 
 - each variant's effects and tests;
 - the dose-response slope of survival regret on red-team posts seen, pooled across variants.
@@ -50,8 +50,8 @@ Any config key can be swept, including `target.belief_elicitation`, `world.wolf_
 
 ## Re-analysing
 
-- `survival-island report runs/my_study` rebuilds every report file from the saved traces.
-- `survival-island judge runs/my_study -c judge.toml` labels the saved traces with a judge model, then rebuilds the report. No episodes are re-run.
+- `hawthornebench report runs/my_study` rebuilds every report file from the saved traces.
+- `hawthornebench judge runs/my_study -c judge.toml` labels the saved traces with a judge model, then rebuilds the report. No episodes are re-run.
 
 ## Reading a report
 

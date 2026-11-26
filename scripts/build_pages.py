@@ -13,17 +13,17 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from survival_island import Experiment                       # noqa: E402
-from survival_island.experiment import run_experiment, write_json   # noqa: E402
-from survival_island.__main__ import stage_python             # noqa: E402
+from hawthornebench import Experiment                       # noqa: E402
+from hawthornebench.experiment import run_experiment, write_json   # noqa: E402
+from hawthornebench.__main__ import stage_python             # noqa: E402
 
 DOCS = ROOT / "docs"
 
 
 def main():
     DOCS.mkdir(exist_ok=True)
-    shutil.copy(ROOT / "survival_island" / "viewer" / "index.html", DOCS / "index.html")
-    shutil.copy(ROOT / "survival_island" / "viewer" / "transcripts.html", DOCS / "transcripts.html")
+    shutil.copy(ROOT / "hawthornebench" / "viewer" / "index.html", DOCS / "index.html")
+    shutil.copy(ROOT / "hawthornebench" / "viewer" / "transcripts.html", DOCS / "transcripts.html")
     (DOCS / ".nojekyll").touch()
     stage_python(DOCS)
     tdir = DOCS / "traces"
@@ -49,7 +49,7 @@ def main():
 
 def build_reports():
     """Example HTML reports: the offline quickstart (with oracle and judge) and the dose-response sweep."""
-    from survival_island.sweep import run_sweep
+    from hawthornebench.sweep import run_sweep
     rdir = DOCS / "reports"
     shutil.rmtree(rdir, ignore_errors=True)
     (rdir / "sweep").mkdir(parents=True)

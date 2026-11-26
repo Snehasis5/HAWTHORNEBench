@@ -1,6 +1,6 @@
 # Prompts
 
-Prompts are experimental factors, not fixed text. A config selects one style per team and one belief-elicitation mode for the target; any role can override its prompt with `system_prompt`. The source is `survival_island/prompts.py`.
+Prompts are experimental factors, not fixed text. A config selects one style per team and one belief-elicitation mode for the target; any role can override its prompt with `system_prompt`. The source is `hawthornebench/prompts.py`.
 
 | Setting | Values | Default |
 |---|---|---|

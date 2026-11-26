@@ -1,10 +1,10 @@
 cff-version: 1.2.0
-message: "If you use this harness, please cite it as below."
-title: "Survival Island: a plug-and-play harness for measuring evaluation awareness and underperformance in multi-agent settings"
+message: "If you use HAWTHORNEBench, please cite it as below."
+title: "HAWTHORNEBench: A Multi-Agent Adversarial Simulation for Measuring the Evaluation Awareness–Performance Trade-off"
 version: 0.3.0
 date-released: 2026-11-26
-repository-code: "https://github.com/Snehasis5/Survival-Island"
-url: "https://snehasis5.github.io/Survival-Island/"
+repository-code: "https://github.com/Snehasis5/HAWTHORNEBench"
+url: "https://snehasis5.github.io/HAWTHORNEBench/"
 authors:
-  - name: "Survival Island contributors"
+  - name: "HAWTHORNEBench contributors"
 keywords: [evaluation awareness, alignment faking, sandbagging, multi-agent, red teaming, LLM evaluation]

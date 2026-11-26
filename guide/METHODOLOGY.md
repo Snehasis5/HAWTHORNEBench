@@ -101,7 +101,7 @@ Every seed gives one paired difference $d_s$ per measure. Reports give:
 | Message volume rather than content drives the effect | Neutral control keeps names, timing and volume; `"silent"` gives the stronger contrast |
 | Sampling noise mistaken for an effect | Matched seeds, many seeds, permutation tests; set `temperature = 0` for near-deterministic agents |
 | Order or identity cues | Names, team slots, positions and posting order randomised per seed |
-| Judge bias | Labels stored per round for audit; regex and LLM judges can be compared on the same traces with `survival-island judge` |
+| Judge bias | Labels stored per round for audit; regex and LLM judges can be compared on the same traces with `hawthornebench judge` |
 | Provider failures | Retries with backoff; failed calls become rest or silence, are counted in `usage.errors` and appear in the trace |
 | Contamination or saturation | Procedural roster, schedule and outcomes per seed; prompts and world parameters are configurable |
 

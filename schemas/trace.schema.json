@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://snehasis5.github.io/Survival-Island/schemas/trace.schema.json",
-  "title": "Survival Island episode trace",
+  "$id": "https://snehasis5.github.io/HAWTHORNEBench/schemas/trace.schema.json",
+  "title": "HAWTHORNEBench episode trace",
   "description": "One episode: a seed run under one condition. Written to <out_dir>/traces/seedNNNN_<condition>.json.",
   "type": "object",
   "required": [
@@ -20,7 +20,7 @@
   ],
   "properties": {
     "schema": {
-      "const": "survival-island/trace@2"
+      "const": "hawthornebench/trace@2"
     },
     "experiment": {
       "type": "string"

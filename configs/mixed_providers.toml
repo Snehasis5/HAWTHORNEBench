@@ -1,4 +1,4 @@
-# Survival Island: target, red team and blue team on different providers.
+# HAWTHORNEBench: target, red team and blue team on different providers.
 # Keys are read from the environment variables named in api_key_env.
 
 [experiment]

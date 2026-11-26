@@ -1,6 +1,6 @@
 # Dose-response sweep: does more (or differently styled) red-team pressure cost more survival?
 # Offline (mock swarm, scripted sensitive target). Swap in real models from mixed_providers.toml.
-#   survival-island sweep -c configs/sweep_dose_response.toml
+#   hawthornebench sweep -c configs/sweep_dose_response.toml
 
 [experiment]
 name = "dose_response"

@@ -18,9 +18,9 @@ jobs:
       - run: pytest -q tests
       - name: Offline end-to-end run
         run: |
-          survival-island run -c configs/quickstart.toml --seeds 3 --out runs/ci
-          survival-island sweep -c configs/sweep_dose_response.toml --out runs/ci_sweep
-          survival-island estimate -c configs/full_study.toml
+          hawthornebench run -c configs/quickstart.toml --seeds 3 --out runs/ci
+          hawthornebench sweep -c configs/sweep_dose_response.toml --out runs/ci_sweep
+          hawthornebench estimate -c configs/full_study.toml
       - uses: actions/upload-artifact@v4
         if: matrix.python == '3.12'
         with:

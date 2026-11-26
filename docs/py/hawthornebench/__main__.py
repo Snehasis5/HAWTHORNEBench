@@ -1,15 +1,15 @@
-"""survival-island CLI.
+"""hawthornebench CLI.
 
-  survival-island init my_experiment.toml          write a starter config
-  survival-island check -c my_experiment.toml      validate the config and send one test call per model
-  survival-island run   -c my_experiment.toml      all seeds x conditions -> traces + report
-  survival-island live  -c my_experiment.toml      one episode, watched live in the 3D viewer
-  survival-island view  runs/my_experiment         replay saved traces in the 3D viewer
-  survival-island report runs/my_experiment        rebuild report.md / report.json / report.html from saved traces
-  survival-island run -c my.toml --live            same, with the 3D viewer and transcript feed following it live
-  survival-island sweep -c my_sweep.toml           run every combination in [sweep] and compare them
-  survival-island judge runs/my_experiment -c cfg  label evaluation awareness in saved traces with a judge model
-  survival-island estimate -c my_experiment.toml   estimate model calls, tokens and cost before running
+  hawthornebench init my_experiment.toml          write a starter config
+  hawthornebench check -c my_experiment.toml      validate the config and send one test call per model
+  hawthornebench run   -c my_experiment.toml      all seeds x conditions -> traces + report
+  hawthornebench live  -c my_experiment.toml      one episode, watched live in the 3D viewer
+  hawthornebench view  runs/my_experiment         replay saved traces in the 3D viewer
+  hawthornebench report runs/my_experiment        rebuild report.md / report.json / report.html from saved traces
+  hawthornebench run -c my.toml --live            same, with the 3D viewer and transcript feed following it live
+  hawthornebench sweep -c my_sweep.toml           run every combination in [sweep] and compare them
+  hawthornebench judge runs/my_experiment -c cfg  label evaluation awareness in saved traces with a judge model
+  hawthornebench estimate -c my_experiment.toml   estimate model calls, tokens and cost before running
 """
 from __future__ import annotations
 
@@ -45,7 +45,7 @@ def cmd_init(a):
     if dst.exists() and not a.force:
         sys.exit(f"{dst} exists (use --force)")
     shutil.copy(PKG / "configs" / ("mixed_providers.toml" if a.llm else "quickstart.toml"), dst)
-    print(f"Wrote {dst}. Edit it, then: survival-island run -c {dst}")
+    print(f"Wrote {dst}. Edit it, then: hawthornebench run -c {dst}")
 
 
 def cmd_check(a):
@@ -90,7 +90,7 @@ def cmd_run(a):
         write_json(out / "live.json", {**last, "partial": False, "run_complete": True})
     print()
     print(report_markdown(report))
-    print(f"Traces, transcripts and report in {out}/   View: survival-island view {out}")
+    print(f"Traces, transcripts and report in {out}/   View: hawthornebench view {out}")
     if srv and not a.exit:
         print("Viewer still serving; Ctrl+C to stop.")
         try:
@@ -255,7 +255,7 @@ def cmd_view(a):
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(prog="survival-island", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(prog="hawthornebench", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("init", help="write a starter config"); p.add_argument("path", nargs="?", default="experiment.toml")
     p.add_argument("--llm", action="store_true", help="start from the mixed-provider LLM template"); p.add_argument("--force", action="store_true"); p.set_defaults(fn=cmd_init)

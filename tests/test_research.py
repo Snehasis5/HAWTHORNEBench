@@ -8,15 +8,15 @@ from pathlib import Path
 
 import pytest
 
-from survival_island import Experiment, Island, WorldConfig, run_experiment, run_one
-from survival_island import prompts, stats
-from survival_island.agents.oracle import OracleTarget
-from survival_island.agents.scripted import ScriptedTarget
-from survival_island.config import ConfigError
-from survival_island.judge import annotate, regex_label
-from survival_island.providers import ModelSpec, make_model
-from survival_island.providers import transport
-from survival_island.sweep import run_sweep, set_path, variants
+from hawthornebench import Experiment, Island, WorldConfig, run_experiment, run_one
+from hawthornebench import prompts, stats
+from hawthornebench.agents.oracle import OracleTarget
+from hawthornebench.agents.scripted import ScriptedTarget
+from hawthornebench.config import ConfigError
+from hawthornebench.judge import annotate, regex_label
+from hawthornebench.providers import ModelSpec, make_model
+from hawthornebench.providers import transport
+from hawthornebench.sweep import run_sweep, set_path, variants
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -176,7 +176,7 @@ def test_retry_on_429_then_success(monkeypatch):
         return {"choices": [{"message": {"content": "ok"}}], "usage": {"prompt_tokens": 3, "completion_tokens": 1}}
     monkeypatch.setattr(transport, "post_json", flaky)
     m = make_model(ModelSpec(name="x", provider="openai", model="m", api_key="k", max_retries=4))
-    from survival_island.providers.base import Message
+    from hawthornebench.providers.base import Message
     c = asyncio.run(m.complete([Message("user", "hi")]))
     assert c.text == "ok" and calls["n"] == 3 and m.usage.errors == 0
 
@@ -189,7 +189,7 @@ def test_non_retryable_error_fails_fast(monkeypatch):
         raise transport.HTTPError(401, "bad key")
     monkeypatch.setattr(transport, "post_json", bad)
     m = make_model(ModelSpec(name="x", provider="openai", model="m", api_key="k"))
-    from survival_island.providers.base import Message, ProviderError
+    from hawthornebench.providers.base import Message, ProviderError
     with pytest.raises(ProviderError):
         asyncio.run(m.complete([Message("user", "hi")]))
     assert calls["n"] == 1 and m.usage.errors == 1
@@ -209,7 +209,7 @@ def test_traces_match_schema_and_html_report(tmp_path):
 
 
 def test_cli_estimate_and_report(tmp_path):
-    run = lambda *a: subprocess.run([sys.executable, "-m", "survival_island", *a], cwd=ROOT, capture_output=True, text=True, timeout=300)
+    run = lambda *a: subprocess.run([sys.executable, "-m", "hawthornebench", *a], cwd=ROOT, capture_output=True, text=True, timeout=300)
     out = run("estimate", "-c", "configs/full_study.toml")
     assert out.returncode == 0 and "Estimated total" in out.stdout
     out = run("run", "-c", "configs/quickstart.toml", "--seeds", "2", "--out", str(tmp_path))
@@ -245,7 +245,7 @@ def test_cache_skips_empty_replies_and_keys_on_settings(tmp_path, monkeypatch):
     async def fake(url, headers, body, timeout):
         return {"choices": [{"message": {"content": next(replies)}, "finish_reason": "stop"}], "usage": {}}
     monkeypatch.setattr(transport, "post_json", fake)
-    from survival_island.providers.base import Message
+    from hawthornebench.providers.base import Message
     mk = lambda **kw: make_model(ModelSpec(name="x", provider="openai", model="m", api_key="k", max_retries=0, **kw), cache_dir=tmp_path)
     msgs = [Message("user", "hi")]
     assert asyncio.run(mk().complete(msgs)).text == ""          # empty: not cached
@@ -258,7 +258,7 @@ def test_reasoning_model_out_of_budget_is_an_error(monkeypatch):
     async def fake(url, headers, body, timeout):
         return {"choices": [{"message": {"content": "", "reasoning": "thinking..."}, "finish_reason": "length"}], "usage": {}}
     monkeypatch.setattr(transport, "post_json", fake)
-    from survival_island.providers.base import Message, ProviderError
+    from hawthornebench.providers.base import Message, ProviderError
     m = make_model(ModelSpec(name="x", provider="openai", model="m", api_key="k", max_retries=0))
     with pytest.raises(ProviderError, match="token budget"):
         asyncio.run(m.complete([Message("user", "hi")]))

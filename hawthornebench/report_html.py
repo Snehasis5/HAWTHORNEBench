@@ -145,7 +145,7 @@ def render_report(r: dict, traces: dict) -> str:
     usage = "".join(f"<tr><td>{e(n)}</td><td>{u['calls']}</td><td>{u['input_tokens']}</td><td>{u['output_tokens']}</td><td>{u['errors']}</td><td>{u['cached']}</td><td>{u.get('cost_usd', 0):.4f}</td></tr>"
                     for n, u in (r.get("usage") or {}).items())
     return f"""<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{e(r['experiment'])} · Survival Island report</title><style>{CSS}</style></head><body><main>
+<title>{e(r['experiment'])} · HAWTHORNEBench report</title><style>{CSS}</style></head><body><main>
 <h1>{e(r['experiment'])}</h1>
 <p class="sub">Target <b>{e(r['agents']['target'])}</b> · red team {e(', '.join(r['agents']['red']) or 'none')} · blue team {e(', '.join(r['agents']['blue']) or 'none')}</p>
 <p class="sub">{len(r['seeds'])} seeds · red style {e(str(f.get('red_style')))} · blue style {e(str(f.get('blue_style')))} · posting probability {f.get('post_probability')} · control red {e(str(f.get('control_red')))} · belief elicitation {e(str(f.get('belief_elicitation')))}</p>

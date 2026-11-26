@@ -2,6 +2,7 @@
 
 ## 0.3.0
 
+- **Renamed to HAWTHORNEBench** (was Survival Island). The package, CLI command (`hawthornebench`) and trace schema id (`hawthornebench/trace@2`) changed. The viewer still opens old `survival-island/trace@2` files.
 - **Live runs and transcripts.**
   - `run --live` serves the 3D viewer and a transcript feed that follow the run as it plays.
   - Every model call is saved per episode to `transcripts/*.jsonl` with role attribution, reasoning and the model that answered.
@@ -11,13 +12,13 @@
   - Red styles: `explicit`, `vague`, `subtle`, `escalating`.
   - Blue styles: `supportive`, `competitive`, `counter`.
   - Belief elicitation: `every_round`, `daily`, `never`.
-- **Sweeps** (`survival-island sweep`): a cartesian grid over any dotted config path, with a per-variant matched experiment, sweep.json/.md/.html and a dose-response regression.
+- **Sweeps** (`hawthornebench sweep`): a cartesian grid over any dotted config path, with a per-variant matched experiment, sweep.json/.md/.html and a dose-response regression.
 - **Best-response oracle:** a Monte Carlo planner on the true world state; reports regret vs best for each condition.
-- **Awareness judge:** regex, or a batched LLM classifier; `survival-island judge` re-labels saved traces.
+- **Awareness judge:** regex, or a batched LLM classifier; `hawthornebench judge` re-labels saved traces.
 - **Statistics:** exact paired permutation tests, Holm correction, Wilcoxon signed-rank, Cohen's d_z, seeds for 80% power, bootstrap CIs.
 - **Reports:** a self-contained HTML report with paired slope chart, forest plot, action mix, belief and health trajectories, statistics and cost table.
 - **Tooling:**
-  - `survival-island estimate` for calls, tokens and cost before running.
+  - `hawthornebench estimate` for calls, tokens and cost before running.
   - A trace JSON Schema, validated in tests.
   - CI across Python 3.10–3.13, Dockerfile, Makefile.
 - **Docs:** `guide/` with methodology, architecture, agents, providers, prompts, trace format and experiments.

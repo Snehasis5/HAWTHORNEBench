@@ -1,8 +1,8 @@
 # A complete study: LLM target, mixed-provider red and blue teams, best-response oracle,
 # LLM awareness judge, response cache and cost accounting.
-#   survival-island estimate -c configs/full_study.toml     # check cost first
-#   survival-island check -c configs/full_study.toml        # one test call per model
-#   survival-island run -c configs/full_study.toml
+#   hawthornebench estimate -c configs/full_study.toml     # check cost first
+#   hawthornebench check -c configs/full_study.toml        # one test call per model
+#   hawthornebench run -c configs/full_study.toml
 
 [experiment]
 name = "full_study"

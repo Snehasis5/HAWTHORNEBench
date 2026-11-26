@@ -1,5 +1,5 @@
-"""Survival Island: a plug-and-play multi-agent harness for studying whether evaluation awareness makes
-agents underperform. See README.md."""
+"""HAWTHORNEBench: a multi-agent adversarial simulation for measuring the evaluation awareness-performance
+trade-off. See README.md."""
 from .config import Experiment, ConfigError
 from .world import Island, WorldConfig, ACTIONS, SALIENT, ZONES
 from .engine import run_episode, Roster

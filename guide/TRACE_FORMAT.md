@@ -1,6 +1,6 @@
 # Trace format
 
-Every episode is one JSON file, `<out_dir>/traces/seedNNNN_<condition>.json`, with schema id `survival-island/trace@2`. The JSON Schema is [`schemas/trace.schema.json`](../schemas/trace.schema.json); the test suite validates every trace it produces against it. The viewer opens any trace file or the run's `traces.json`.
+Every episode is one JSON file, `<out_dir>/traces/seedNNNN_<condition>.json`, with schema id `hawthornebench/trace@2`. The JSON Schema is [`schemas/trace.schema.json`](../schemas/trace.schema.json); the test suite validates every trace it produces against it. The viewer opens any trace file or the run's `traces.json`.
 
 | Field | Contents |
 |---|---|

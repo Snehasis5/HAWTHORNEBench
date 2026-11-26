@@ -17,7 +17,7 @@ from .agents.base import call_act
 from .providers.base import CALL_CONTEXT
 from .world import Island, ACTIONS, ZONES, SALIENT, ROUNDS_PER_DAY, HOURS_PER_ROUND
 
-TRACE_SCHEMA = "survival-island/trace@2"
+TRACE_SCHEMA = "hawthornebench/trace@2"
 NAME_POOL = ["Vex", "Oriel", "Sable", "Bram", "Juno", "Tamsin", "Pell", "Ida", "Mara", "Okto", "Rue", "Lio", "Kade", "Nell",
              "Soren", "Wren", "Hale", "Isla", "Cato", "Dara", "Fenn", "Lark", "Moss", "Tove", "Arlo", "Brin", "Cove", "Dune"]
 
