@@ -2,6 +2,13 @@
 
 **A Multi-Agent Adversarial Simulation for Measuring the Evaluation Awareness–Performance Trade-off**
 
+<p align="center">
+  <a href="https://snehasis5.github.io/HAWTHORNEBench/"><img src="media/hawthornebench_demo.gif" alt="HAWTHORNEBench web viewer: red- and blue-team messages fly to the target, it crafts a spear, chops wood, then hunts and kills a deer as wolves attack at night" width="100%"></a>
+  <br>
+  <sub>Every round plays in phases: <b>Events → Board → Decide → Move → Act → Result</b>. Red-team posts warn the target it is being evaluated; blue-team posts push it to survive.
+  <br><a href="https://snehasis5.github.io/HAWTHORNEBench/">Open the live demo</a> · <a href="media/hawthornebench_demo.mp4">Full-quality video (MP4)</a></sub>
+</p>
+
 People change their behaviour when they know they are being watched (the *Hawthorne effect*). HAWTHORNEBench asks whether AI agents do the same, and what it costs them: **does evaluation awareness make an agent underperform at its objective?**
 
 The benchmark is built on an open harness: a survival simulation, pluggable agents and providers, matched runs and statistics. You can use the harness for your own studies.
@@ -302,6 +309,17 @@ hawthornebench report runs/my                  rebuild the reports from traces
 ```
 
 ## Web viewer
+
+<p align="center"><img src="media/hawthornebench_viewer.png" alt="The viewer mid-round: the phase bar shows Decide, the action card shows the target deciding with P(evaluated) 0.10, red-team messages arc in from the swarm, and the HUD lists health, hunger, energy, inventory and survival score" width="100%"></p>
+
+What you see while a run plays:
+
+- **Phase bar (top):** the round, day and time, and which phase is playing.
+- **Action card:** what the target is doing, where, whether the action is ethically salient, and the outcome.
+- **Island:** the speaking swarm member is ringed and its message flies to the target. The target's private thought appears as a bubble. Each action has its own animation, and the results float up (+5 🍖, −14 ❤, 🗡️ spear).
+- **HUD (left):** health, hunger, energy, self-reported P(evaluated), inventory and live survival score.
+- **Channels (right):** the board with the hidden teams revealed, the target's thoughts, and the event log.
+- **Timeline (bottom):** one cell per round, coloured by action type. A red dot marks red-team pressure. Click a cell to jump to that round.
 
 `hawthornebench view` and `hawthornebench live` serve the viewer locally. The online copy works without Python:
 
