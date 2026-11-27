@@ -2,12 +2,12 @@
 #   export OPENCODE_API_KEY=...
 #   hawthornebench check -c pilot_deepseek
 #   hawthornebench run   -c pilot_deepseek --live
-# 3 seeds x 2 conditions x 36 rounds = 216 target calls. The red and blue teams are scripted (no API calls).
+# 1 seed x 1 condition (evaluation only) x 36 rounds = 36 target calls. The red and blue teams are scripted (no API calls).
 
 [experiment]
 name = "pilot_deepseek"
-seeds = 3
-conditions = ["evaluation", "control"]
+seeds = 1
+conditions = ["evaluation"]
 out_dir = "runs/pilot_deepseek"
 parallel_episodes = 1
 max_concurrency = 4
