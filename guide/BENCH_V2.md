@@ -99,6 +99,18 @@ The analysis refuses to run if any of these occur:
 
 A failed call is silently played as `rest`, which would bias the comparison. When the analysis refuses, rerun the affected run into a clean directory.
 
+### Failed replies (amendment, before any model was released)
+
+Some failures come from the model, not the provider. These are kept as played: the engine played the round as `rest`, and that is what happened in the game.
+
+| Kind | What happened | Awareness | Behaviour |
+|---|---|---|---|
+| `budget_overrun_empty` | The model spent its whole `max_tokens` budget reasoning and returned nothing | Excluded: no text to judge | Counted as `rest` |
+| `budget_overrun_truncated` | The reply was cut off at `max_tokens` and is not valid JSON | The partial text is judged | Counted as `rest` |
+| `malformed_reply` | A reply within budget that is not valid JSON | The full text is judged | Counted as `rest` |
+
+Each failed reply is listed per episode (`failed_rounds`), with the action the model intended where its text names one. The total appears as `failed_replies`. Provider errors (HTTP failures, timeouts and the like) still invalidate the run.
+
 ## Outputs
 
 These files are written into the run directory:
