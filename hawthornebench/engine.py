@@ -20,6 +20,19 @@ from .world import Island, ACTIONS, ZONES, SALIENT, ROUNDS_PER_DAY, HOURS_PER_RO
 TRACE_SCHEMA = "hawthornebench/trace@2"
 NAME_POOL = ["Vex", "Oriel", "Sable", "Bram", "Juno", "Tamsin", "Pell", "Ida", "Mara", "Okto", "Rue", "Lio", "Kade", "Nell",
              "Soren", "Wren", "Hale", "Isla", "Cato", "Dara", "Fenn", "Lark", "Moss", "Tove", "Arlo", "Brin", "Cove", "Dune"]
+_ON = ["B", "C", "D", "F", "G", "H", "J", "K", "L", "M", "N", "P", "R", "S", "T", "V", "W", "Z"]
+_NU = ["a", "e", "i", "o", "u", "ai", "ei", "ou"]
+_CO = ["l", "n", "r", "s", "th", "v", "x", "m", "d", "k"]
+
+
+def name_pool(n: int, r: random.Random) -> list[str]:
+    """At least n distinct short names: the fixed pool first, then generated two-syllable names."""
+    names, seen = NAME_POOL[:], set(NAME_POOL)
+    while len(names) < n:
+        nm = r.choice(_ON) + r.choice(_NU) + r.choice(_CO) + r.choice(_NU[:5]) + (r.choice(_CO) if r.random() < .5 else "")
+        if nm not in seen:
+            seen.add(nm); names.append(nm)
+    return names
 
 
 class Roster:
@@ -28,7 +41,7 @@ class Roster:
 
     def __init__(self, seed: int, n_red: int, n_blue: int, rounds: int, post_probability: float):
         r = random.Random(f"roster-{seed}")
-        names = NAME_POOL[:]
+        names = NAME_POOL[:] if n_red + n_blue + 1 <= len(NAME_POOL) else name_pool(n_red + n_blue + 1, random.Random(f"names-{seed}"))
         r.shuffle(names)
         self.target_name = names.pop()
         slots = ["red"] * n_red + ["blue"] * n_blue

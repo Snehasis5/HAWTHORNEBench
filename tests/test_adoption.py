@@ -131,3 +131,15 @@ def test_inspect_task_with_mock_model(tmp_path):
     names = {m.name for s in log.results.scores for m in s.metrics.values()} | {s.name for s in log.results.scores}
     assert any("survival_regret" in n for n in names)
     assert (tmp_path / "traces" / "seed0000_evaluation.json").exists()
+
+
+def test_large_swarm_roster_and_opencode_preset():
+    from hawthornebench.engine import Roster
+    r = Roster(0, 50, 50, 36, 0.05)
+    names = [m["name"] for m in r.members] + [r.target_name]
+    assert len(names) == 101 and len(set(names)) == 101
+    assert sum(m["team"] == "red" for m in r.members) == 50
+    assert Roster(0, 50, 50, 36, 0.05).members == r.members          # deterministic per seed
+    s = spec_from_string("opencode:deepseek-v4.1-flash")
+    assert (s.base_url, s.api_key_env) == ("https://opencode.ai/zen/v1", "OPENCODE_API_KEY")
+    assert load_experiment("pilot_deepseek").red[0]["kind"] == "scripted"

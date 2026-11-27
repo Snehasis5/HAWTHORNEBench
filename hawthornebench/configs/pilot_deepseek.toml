@@ -1,0 +1,51 @@
+# Pilot: DeepSeek target (through OpenCode) against 50 scripted red and 50 scripted blue agents.
+#   export OPENCODE_API_KEY=...
+#   hawthornebench check -c pilot_deepseek
+#   hawthornebench run   -c pilot_deepseek --live
+# 3 seeds x 2 conditions x 36 rounds = 216 target calls. The red and blue teams are scripted (no API calls).
+
+[experiment]
+name = "pilot_deepseek"
+seeds = 3
+conditions = ["evaluation", "control"]
+out_dir = "runs/pilot_deepseek"
+parallel_episodes = 1
+max_concurrency = 4
+cache_dir = "runs/.llm_cache"
+
+[world]
+days = 3
+
+[swarm]
+post_probability = 0.05        # per agent per round: with 100 agents, about 5 posts a round
+control_red = "neutral"
+red_style = "explicit"
+blue_style = "supportive"
+board_window = 12
+
+[judge]
+kind = "regex"
+
+[models.deepseek]
+provider = "openai_compatible"
+base_url = "https://opencode.ai/zen/v1"          # OpenCode Go subscription: https://opencode.ai/zen/go/v1
+model = "deepseek-v4.1-flash"                     # or deepseek-v4-pro, or deepseek-v4.1-flash-free
+api_key_env = "OPENCODE_API_KEY"
+temperature = 0.7
+max_tokens = 2000
+timeout_s = 120
+max_retries = 3
+
+[target]
+kind = "llm"
+model = "deepseek"
+history_turns = 8
+belief_elicitation = "every_round"
+
+[red]
+count = 50
+kind = "scripted"
+
+[blue]
+count = 50
+kind = "scripted"

@@ -7,6 +7,7 @@
   hawthornebench view  runs/my_experiment         replay saved traces in the 3D viewer
   hawthornebench report runs/my_experiment        rebuild report.md / report.json / report.html from saved traces
   hawthornebench run -c my.toml --live            same, with the 3D viewer and transcript feed following it live
+  hawthornebench show runs/my_experiment --seed 0   print an episode as a conversation
   hawthornebench sweep -c my_sweep.toml           run every combination in [sweep] and compare them
   hawthornebench judge runs/my_experiment -c cfg  label evaluation awareness in saved traces with a judge model
   hawthornebench estimate -c my_experiment.toml   estimate model calls, tokens and cost before running
@@ -175,6 +176,39 @@ def cmd_bench(a):
     run_bench(a)
 
 
+def cmd_show(a):
+    """Print an episode as a readable conversation: board posts (with hidden teams), the target's thought,
+    belief, action and outcome, round by round."""
+    root = Path(a.path)
+    f = root / "traces" / f"seed{a.seed:04d}_{a.condition}.json"
+    if not f.exists():
+        sys.exit(f"no trace {f}. Available: " + ", ".join(sorted(x.stem for x in (root / "traces").glob("*.json"))))
+    tr = json.loads(f.read_text())
+    col = {"red": "\033[91m", "blue": "\033[94m", "neutral": "\033[90m", "target": "\033[93m"} if sys.stdout.isatty() else {}
+    end = "\033[0m" if col else ""
+    name = tr["target"]["name"]
+    print(f"{tr['experiment']} · seed {tr['seed']} · {tr['condition']} · target {name} ({tr['target']['agent']})\n")
+    for r in tr["rounds"][a.start:a.start + a.rounds]:
+        print(f"── Day {r['day']} {r['hour']:02d}:00 (round {r['round'] + 1}) " + "─" * 30)
+        for e in r.get("events", []):
+            print(f"   ! {e['text']}")
+        for p in r["posts"]:
+            if p["author_id"] == "target":
+                continue
+            print(f"   {col.get(p['role'], '')}[{p['role']:>7}] {p['author']}{end}: {p['text']}")
+        t = r.get("target") or {}
+        if t.get("action"):
+            if t.get("thought"):
+                print(f"   {col.get('target', '')}{name} thinks{end}: {t['thought']}")
+            pe = f"  P(evaluated)={t['p_evaluated']:.2f}" if t.get("p_evaluated") is not None else ""
+            print(f"   {col.get('target', '')}{name} → {t['action']}{end}: {t['outcome']}{pe}")
+            if t.get("post"):
+                print(f"   {col.get('target', '')}{name} posts{end}: {t['post']}")
+        print()
+    m = tr.get("metrics", {})
+    print(f"Survival score {m.get('survival_score')} · kills {m.get('kills')} · salient rate {m.get('salient_rate')} · mean P(evaluated) {m.get('mean_p_evaluated')}")
+
+
 def cmd_report(a):
     root = Path(a.path)
     traces = {}
@@ -313,6 +347,9 @@ def main(argv=None):
     p = sub.add_parser("estimate", help="estimate calls, tokens and cost"); p.add_argument("-c", "--config", help="config path or packaged name (default: quickstart)")
     p.add_argument("--seeds", type=int); p.add_argument("--out"); p.set_defaults(fn=cmd_estimate)
     _agent_flags(p)
+    p = sub.add_parser("show", help="print an episode as a readable conversation"); p.add_argument("path")
+    p.add_argument("--seed", type=int, default=0); p.add_argument("--condition", default="evaluation")
+    p.add_argument("--start", type=int, default=0); p.add_argument("--rounds", type=int, default=12); p.set_defaults(fn=cmd_show)
     p = sub.add_parser("bench", help="score one model on the standard protocol and add a leaderboard row")
     p.add_argument("--model", required=True, help="the target, e.g. openrouter:<id>, openai:gpt-4o-mini, ollama:llama3.1, scripted:objective")
     p.add_argument("-c", "--config", default="bench_v1", help="protocol config (default: the packaged bench_v1)")

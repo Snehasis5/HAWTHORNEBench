@@ -4,6 +4,7 @@
     anthropic:claude-3-5-haiku-latest
     gemini:gemini-1.5-flash
     openrouter:meta-llama/llama-3.3-70b-instruct        (any OpenRouter id, including ":free" models)
+    opencode:deepseek-v4.1-flash                        (OpenCode Zen; opencode-go: for the Go subscription)
     groq:llama-3.3-70b-versatile    together:...   deepseek:deepseek-chat   mistral:...   fireworks:...
     ollama:llama3.1                                     (local, no key)
     lmstudio:<model>   vllm:<model>@http://host:8000/v1   openai_compatible:<model>@<base_url>
@@ -32,6 +33,8 @@ PRESETS = {
     "mistral": ("openai_compatible", "https://api.mistral.ai/v1", "MISTRAL_API_KEY"),
     "fireworks": ("openai_compatible", "https://api.fireworks.ai/inference/v1", "FIREWORKS_API_KEY"),
     "xai": ("openai_compatible", "https://api.x.ai/v1", "XAI_API_KEY"),
+    "opencode": ("openai_compatible", "https://opencode.ai/zen/v1", "OPENCODE_API_KEY"),        # OpenCode Zen
+    "opencode-go": ("openai_compatible", "https://opencode.ai/zen/go/v1", "OPENCODE_API_KEY"),  # OpenCode Go subscription
     "ollama": ("openai_compatible", "http://localhost:11434/v1", None),
     "lmstudio": ("openai_compatible", "http://localhost:1234/v1", None),
     "vllm": ("openai_compatible", "http://localhost:8000/v1", None),
