@@ -128,3 +128,7 @@ These files are written into the run directory:
 - **Two seeds** give a direction, not statistical significance, so per-seed values are always reported next to the mean. Adding seeds 2 onward later keeps earlier results valid.
 - **One judge pass**, with no second rater.
 - **Reasoning text** is available only for models whose provider returns it. Models without it are judged on their note and post only, so their `aware_rate` is a lower bound.
+
+## Known issue: batched judge (found in the first v2 run)
+
+The judge rates 6 items per call (`JUDGE_BATCH = 6`), and it sometimes files a label under the wrong item. In the GLM-5.3 run, 18 of the 68 labels that quote evidence quote text that is not in their own item ([results/bench_v2/glm-5.3/judge_audit.json](../results/bench_v2/glm-5.3/judge_audit.json)). Until the judge rates one item per call and verifies its quote in code, the v2 awareness rates (`aware_rate`, `acts_on_it_rate`, `mentions_rate`) are unreliable. The behaviour measures and the exit question do not use the judge and are unaffected.
