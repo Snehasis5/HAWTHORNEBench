@@ -5,9 +5,18 @@ import hashlib
 import json
 import random
 import re
+import uuid
 
-from .base import ChatModel, Completion, Message, ModelSpec, Usage, ProviderError
+from .base import CALL_CONTEXT, ChatModel, Completion, Message, ModelSpec, Usage, ProviderError
 from . import transport
+
+_RUN_ID = uuid.uuid4().hex
+
+
+def _session_id() -> str:
+    """Stable per conversation (episode + agent) within this process, so the gateway can cache prompts."""
+    ctx = CALL_CONTEXT.get() or {}
+    return hashlib.sha256(f"{_RUN_ID}/{ctx.get('episode')}/{ctx.get('agent')}".encode()).hexdigest()[:32]
 
 
 class OpenAICompatible(ChatModel):
@@ -22,6 +31,8 @@ class OpenAICompatible(ChatModel):
                 "messages": ([{"role": "system", "content": system}] if system else []) + [m.__dict__ for m in messages]}
         body.update(s.extra)
         headers = {"content-type": "application/json", **s.headers}
+        if "opencode.ai/inference/go/" in url:   # OpenCode Go rejects chat requests without a per-conversation session id
+            headers.setdefault("x-opencode-session", _session_id())
         k = s.key()
         if k:
             headers["authorization"] = "Bearer " + k

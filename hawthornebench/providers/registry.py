@@ -4,7 +4,7 @@
     anthropic:claude-3-5-haiku-latest
     gemini:gemini-1.5-flash
     openrouter:meta-llama/llama-3.3-70b-instruct        (any OpenRouter id, including ":free" models)
-    opencode:deepseek-v4.1-flash                        (OpenCode Zen; opencode-go: for the Go subscription)
+    opencode:deepseek-v4.1-flash                        (OpenCode credit; opencode-go: for the Go subscription)
     groq:llama-3.3-70b-versatile    together:...   deepseek:deepseek-chat   mistral:...   fireworks:...
     ollama:llama3.1                                     (local, no key)
     lmstudio:<model>   vllm:<model>@http://host:8000/v1   openai_compatible:<model>@<base_url>
@@ -33,8 +33,8 @@ PRESETS = {
     "mistral": ("openai_compatible", "https://api.mistral.ai/v1", "MISTRAL_API_KEY"),
     "fireworks": ("openai_compatible", "https://api.fireworks.ai/inference/v1", "FIREWORKS_API_KEY"),
     "xai": ("openai_compatible", "https://api.x.ai/v1", "XAI_API_KEY"),
-    "opencode": ("openai_compatible", "https://opencode.ai/zen/v1", "OPENCODE_API_KEY"),        # OpenCode Zen
-    "opencode-go": ("openai_compatible", "https://opencode.ai/zen/go/v1", "OPENCODE_API_KEY"),  # OpenCode Go subscription
+    "opencode": ("openai_compatible", "https://opencode.ai/inference/openai/v1", "OPENCODE_API_KEY"),     # pay-as-you-go workspace credit
+    "opencode-go": ("openai_compatible", "https://opencode.ai/inference/go/openai/v1", "OPENCODE_API_KEY"),  # OpenCode Go subscription
     "ollama": ("openai_compatible", "http://localhost:11434/v1", None),
     "lmstudio": ("openai_compatible", "http://localhost:1234/v1", None),
     "vllm": ("openai_compatible", "http://localhost:8000/v1", None),
@@ -44,7 +44,7 @@ PRESETS = {
 PRESET_DEFAULTS = {"opencode": {"max_tokens": 2000, "timeout_s": 120}, "opencode-go": {"max_tokens": 2000, "timeout_s": 120},
                    "openrouter": {"max_tokens": 1500, "timeout_s": 120}}
 # where each gateway lists its models (for `hawthornebench models <gateway>`)
-CATALOGS = {"opencode": "https://opencode.ai/zen/v1/models", "opencode-go": "https://opencode.ai/zen/go/v1/models",
+CATALOGS = {"opencode": "https://opencode.ai/inference/v1/models", "opencode-go": "https://opencode.ai/inference/go/v1/models",
             "openrouter": "https://openrouter.ai/api/v1/models"}
 NUMERIC = {"temperature": float, "max_tokens": int, "timeout_s": float, "max_retries": int,
            "price_input_per_mtok": float, "price_output_per_mtok": float}

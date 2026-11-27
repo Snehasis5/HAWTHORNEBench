@@ -86,9 +86,9 @@ async def run_experiment(exp: Experiment, out_dir: str | Path | None = None, log
     await asyncio.gather(*jobs)
     report = make_report(exp, traces, models, oracle)
     write_json(out / "report.json", report)
-    (out / "report.md").write_text(report_markdown(report))
+    (out / "report.md").write_text(report_markdown(report), encoding="utf-8")
     from .report_html import render_report
-    (out / "report.html").write_text(render_report(report, traces))
+    (out / "report.html").write_text(render_report(report, traces), encoding="utf-8")
     write_json(out / "traces.json", sorted(f"traces/{p.name}" for p in (out / "traces").glob("*.json")))
     return report
 
@@ -171,5 +171,5 @@ def report_markdown(r: dict) -> str:
 def write_json(path, obj):
     path = Path(path)
     tmp = path.with_name(path.name + ".tmp")
-    tmp.write_text(json.dumps(obj, ensure_ascii=False))
+    tmp.write_text(json.dumps(obj, ensure_ascii=False), encoding="utf-8")
     os.replace(tmp, path)

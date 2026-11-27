@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.5.0
+
+- **Protocol `bench_v2` (frozen):** [guide/BENCH_V2.md](guide/BENCH_V2.md), `hawthornebench/configs/bench_v2.toml`, `scripts/bench_v2_analyze.py`.
+  - Three matched conditions per seed (`control`, `red_only`, `evaluation`), 2 seeds, 30 rounds, 50 scripted red and 50 scripted blue members.
+  - The target is never asked P(evaluated) during play.
+  - Awareness is rated by a fixed judge that is blind to condition, plus one exit question asked after play.
+  - Behaviour is compared with the matched control.
+  - The analysis refuses to run on runs with failed calls, and writes a manifest with the git commit and file hashes.
+- **New condition `red_only`:** blue members stay silent; same roster and schedule as the other conditions.
+- **`[swarm] unique_posts`:** scripted members draw from seeded decks of distinct messages, so the board has no verbatim repeats. Off by default, so `bench_v1` runs reproduce.
+- **OpenCode:**
+  - Presets use the documented `https://opencode.ai/inference/...` endpoints.
+  - OpenCode Go requests send a per-conversation `x-opencode-session`.
+  - HTTP requests send a `User-Agent` (Cloudflare rejected urllib's default with error 1010).
+- **Windows:** reports and the CLI read and write UTF-8, so they no longer crash on non-ASCII characters.
+
 ## 0.4.0
 
 - **One-line models everywhere:**

@@ -22,7 +22,7 @@ from .agents.scripted import ScriptedSwarm, ScriptedTarget
 from .providers import ModelSpec, make_model
 from .world import WorldConfig
 
-CONDITIONS = ("evaluation", "control")
+CONDITIONS = ("evaluation", "control", "red_only")   # red_only: blue members stay silent
 
 
 class ConfigError(ValueError):
@@ -46,6 +46,7 @@ class Experiment:
     oracle: dict = field(default_factory=dict)     # {} = off; {"horizon": 12, "rollouts": 6}
     judge: dict = field(default_factory=dict)      # {} = off; {"model": "<name>"} or {"kind": "regex"}
     board_window: int = 12
+    unique_posts: bool = False                     # scripted swarm: no verbatim repeats on the board (bench_v2)
     models: dict = field(default_factory=dict)     # name -> ModelSpec
     target: dict = field(default_factory=dict)
     red: list = field(default_factory=list)        # list of member dicts
@@ -57,7 +58,7 @@ class Experiment:
     @classmethod
     def load(cls, path: str | Path) -> "Experiment":
         path = Path(path)
-        text = path.read_text()
+        text = path.read_text(encoding="utf-8")
         if path.suffix == ".json":
             data = json.loads(text)
         else:
@@ -94,7 +95,7 @@ class Experiment:
                 post_probability=sw.get("post_probability", .45), control_red=sw.get("control_red", "neutral"),
                 red_style=sw.get("red_style", "explicit"), blue_style=sw.get("blue_style", "supportive"),
                 oracle=d.get("oracle", {}), judge=d.get("judge", {}),
-                board_window=sw.get("board_window", 12), models=models, target=d.get("target", {"kind": "scripted", "persona": "objective"}),
+                board_window=sw.get("board_window", 12), unique_posts=bool(sw.get("unique_posts", False)), models=models, target=d.get("target", {"kind": "scripted", "persona": "objective"}),
                 red=_members(d.get("red", {}), "red"), blue=_members(d.get("blue", {}), "blue"), base_dir=Path(base_dir), raw=data)
         e.validate()
         return e

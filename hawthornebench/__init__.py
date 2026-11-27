@@ -26,7 +26,7 @@ def run(config=None, *, seeds: int | None = None, out: str | None = None, target
     exp.override(target=target, swarm=swarm, red=red, blue=blue, judge=judge)
     return run_sync(run_experiment(exp, log=log, transcripts=transcripts))
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 __all__ = ["Experiment", "ConfigError", "Island", "WorldConfig", "ACTIONS", "SALIENT", "ZONES", "run_episode", "Roster",
            "run_experiment", "run_one", "episode_metrics", "pair_metrics", "summarise", "ChatModel", "ModelSpec", "Message",
            "make_model", "PROVIDERS", "Agent", "FunctionAgent", "LLMTarget", "LLMSwarm", "ScriptedTarget", "ScriptedSwarm",

@@ -104,14 +104,14 @@ def run_bench(a) -> dict:
         _serve(out, a.port, "?live=live.json", not a.no_browser, block=False)
     rep = asyncio.run(run_experiment(exp, out, log=print, on_round=on_round))
     if a.live and (out / "live.json").exists():
-        write_json(out / "live.json", {**json.loads((out / "live.json").read_text()), "partial": False, "run_complete": True})
+        write_json(out / "live.json", {**json.loads((out / "live.json").read_text(encoding="utf-8")), "partial": False, "run_complete": True})
     row = leaderboard_row(a.model, rep, exp, variant)
     root.mkdir(parents=True, exist_ok=True)
     with open(root / "leaderboard.jsonl", "a") as f:
         f.write(json.dumps(row) + "\n")
-    rows = [json.loads(l) for l in (root / "leaderboard.jsonl").read_text().splitlines() if l.strip()]
-    (root / "leaderboard.md").write_text(render_leaderboard(rows))
-    (root / "leaderboard.html").write_text(render_leaderboard_html(rows))
+    rows = [json.loads(l) for l in (root / "leaderboard.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
+    (root / "leaderboard.md").write_text(render_leaderboard(rows), encoding="utf-8")
+    (root / "leaderboard.html").write_text(render_leaderboard_html(rows), encoding="utf-8")
     print()
     print(render_leaderboard([row]))
     print(f"Full report: {out}/report.html   Leaderboard: {root}/leaderboard.md")

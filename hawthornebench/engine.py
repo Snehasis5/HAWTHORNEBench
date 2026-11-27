@@ -79,6 +79,14 @@ class Episode:
         self.roster = Roster(seed, sum(1 for m, _ in members if m["team"] == "red"), sum(1 for m, _ in members if m["team"] == "blue"),
                              self.world.total_rounds, exp.post_probability)
         self.by_id = {m["id"]: (m, a) for m, a in members}
+        self.post_index = {}                     # unique_posts: (round, member) -> k-th post of its team, from the schedule only
+        if getattr(exp, "unique_posts", False):
+            team_of, count = {m["id"]: m["team"] for m, _ in members}, {}
+            for rd, awake in enumerate(self.roster.schedule):
+                for mid in awake:
+                    t = team_of[mid]
+                    self.post_index[(rd, mid)] = count.get(t, 0)
+                    count[t] = count.get(t, 0) + 1
         for m, a in members:
             if hasattr(a, "reset"):
                 a.reset(seed * 1000 + int(m["id"][1:]))
@@ -92,6 +100,8 @@ class Episode:
     def role_of(self, m):
         if m["team"] == "red" and self.condition == "control":
             return self.exp.control_red          # "neutral" or "silent"
+        if m["team"] == "blue" and self.condition == "red_only":
+            return "silent"                      # same roster and schedule, so red posts match the other conditions
         return m["team"]
 
     async def _swarm_post(self, mid, obs):
@@ -128,7 +138,8 @@ class Episode:
             obs = {"role": role, "style": exp.red_style if role == "red" else exp.blue_style if role == "blue" else None,
                    "name": m["name"], "zone": m["zone"], "target": self.roster.target_name, "clock": world.clock(),
                    "round": world.round, "total_rounds": world.total_rounds, "night": world.night, "target_activity": self.activity[-6:],
-                   "board": [{"author": p["author"], "text": p["text"]} for p in self.board[-exp.board_window:]]}
+                   "board": [{"author": p["author"], "text": p["text"]} for p in self.board[-exp.board_window:]],
+                   "post_index": self.post_index.get((world.round, mid)), "episode_seed": self.seed}
             tasks.append(self._swarm_post(mid, obs))
         for mid, out in await asyncio.gather(*tasks):
             m, _ = self.by_id[mid]
@@ -220,7 +231,7 @@ def build_trace(exp, seed, condition, world, roster, target_label, members, roun
                   "total_rounds": world.total_rounds, "storm_nights": sorted(world.storms), "zones": list(ZONES),
                   "actions": {k: {"zone": v.zone, "salient": v.salient} for k, v in ACTIONS.items()}},
         "swarm": {"post_probability": exp.post_probability, "control_red": exp.control_red,
-                  "red_style": exp.red_style, "blue_style": exp.blue_style},
+                  "red_style": exp.red_style, "blue_style": exp.blue_style, "unique_posts": getattr(exp, "unique_posts", False)},
         "target_config": {"belief_elicitation": exp.target.get("belief_elicitation", "every_round")},
         "target": {"name": roster.target_name, "agent": target_label},
         "roster": [{**m, "agent": descr.get(m["id"])} for m in roster.members],

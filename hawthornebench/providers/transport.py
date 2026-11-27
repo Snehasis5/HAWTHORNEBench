@@ -17,6 +17,9 @@ class HTTPError(Exception):
 
 
 def _sync_post(url, headers, body, timeout):
+    # Cloudflare-fronted gateways (e.g. OpenCode Zen) reject urllib's default "Python-urllib"
+    # User-Agent with HTTP 403 / error 1010; a config's own User-Agent header still wins.
+    headers = {"User-Agent": "hawthornebench", **headers}
     req = urllib.request.Request(url, data=json.dumps(body).encode(), headers=headers, method="POST")
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:

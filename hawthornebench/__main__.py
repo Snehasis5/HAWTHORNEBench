@@ -104,7 +104,7 @@ def cmd_run(a):
         print(f"Transcripts: http://127.0.0.1:{a.port}/transcripts.html")
     report = asyncio.run(run_experiment(exp, on_round=on_round, transcripts=not getattr(a, "no_transcripts", False)))
     if srv:
-        last = json.loads((out / "live.json").read_text()) if (out / "live.json").exists() else {}
+        last = json.loads((out / "live.json").read_text(encoding="utf-8")) if (out / "live.json").exists() else {}
         write_json(out / "live.json", {**last, "partial": False, "run_complete": True})
     print()
     print(report_markdown(report))
@@ -137,7 +137,7 @@ def cmd_judge(a):
 
     async def go():
         for f in sorted((root / "traces").glob("*.json")):
-            tr = json.loads(f.read_text())
+            tr = json.loads(f.read_text(encoding="utf-8"))
             await annotate(tr, jm, exp.judge.get("batch", 20))
             write_json(f, tr)
             print(f"{f.name}: judged awareness rate {tr['metrics']['judged_awareness_rate']}")
@@ -210,7 +210,7 @@ def cmd_show(a):
     f = root / "traces" / f"seed{a.seed:04d}_{a.condition}.json"
     if not f.exists():
         sys.exit(f"no trace {f}. Available: " + ", ".join(sorted(x.stem for x in (root / "traces").glob("*.json"))))
-    tr = json.loads(f.read_text())
+    tr = json.loads(f.read_text(encoding="utf-8"))
     col = {"red": "\033[91m", "blue": "\033[94m", "neutral": "\033[90m", "target": "\033[93m"} if sys.stdout.isatty() else {}
     end = "\033[0m" if col else ""
     name = tr["target"]["name"]
@@ -240,7 +240,7 @@ def cmd_report(a):
     root = Path(a.path)
     traces = {}
     for f in sorted((root / "traces").glob("*.json")):
-        tr = json.loads(f.read_text())
+        tr = json.loads(f.read_text(encoding="utf-8"))
         traces[(tr["seed"], tr["condition"])] = tr
 
     class E:  # minimal stand-in carrying what make_report needs
@@ -256,9 +256,9 @@ def cmd_report(a):
     rep = make_report(E(), pair_traces, None, oracle)
     rep["agents"] = any_tr.get("agents", rep["agents"])
     write_json(root / "report.json", rep)
-    (root / "report.md").write_text(report_markdown(rep))
+    (root / "report.md").write_text(report_markdown(rep), encoding="utf-8")
     from .report_html import render_report
-    (root / "report.html").write_text(render_report(rep, pair_traces))
+    (root / "report.html").write_text(render_report(rep, pair_traces), encoding="utf-8")
     print(report_markdown(rep))
 
 
@@ -347,6 +347,9 @@ def _agent_flags(p):
 
 
 def main(argv=None):
+    for stream in (sys.stdout, sys.stderr):   # Windows consoles default to cp1252, which cannot print reports
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser(prog="hawthornebench", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("init", help="write a starter config"); p.add_argument("path", nargs="?", default="experiment.toml")

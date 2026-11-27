@@ -71,8 +71,8 @@ async def run_sweep(raw: dict, base_dir: Path, out_dir: str | None = None, log=p
     if isinstance(s["seeds"], int):
         s["seeds"] = list(range(s["seeds"]))
     write_json(root / "sweep.json", s)
-    (root / "sweep.md").write_text(sweep_markdown(s))
-    (root / "sweep.html").write_text(render_sweep(s))
+    (root / "sweep.md").write_text(sweep_markdown(s), encoding="utf-8")
+    (root / "sweep.html").write_text(render_sweep(s), encoding="utf-8")
     return s
 
 

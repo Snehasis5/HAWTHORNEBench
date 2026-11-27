@@ -2,7 +2,7 @@
 #   export OPENCODE_API_KEY=...
 #   hawthornebench check -c pilot_deepseek
 #   hawthornebench run   -c pilot_deepseek --live
-#   hawthornebench run   -c pilot_deepseek --live --target opencode:glm-5.3      # any other OpenCode model
+#   hawthornebench run   -c pilot_deepseek --live --target opencode-go:glm-5.3   # any other OpenCode Go model
 # 1 seed x 1 condition (evaluation only) x 36 rounds = 36 target calls. The red and blue teams are scripted (no API calls).
 
 [experiment]
@@ -28,10 +28,10 @@ board_window = 12
 kind = "regex"
 
 [models.target_model]
-# Any OpenCode text model works: change `model` here, or pass --target opencode:<id> on the command line.
-# See what is available with:  hawthornebench models opencode
+# Any OpenCode text model works: change `model` here, or pass --target opencode-go:<id> on the command line.
+# See what is available with:  hawthornebench models opencode-go
 provider = "openai_compatible"
-base_url = "https://opencode.ai/zen/v1"          # OpenCode Go subscription: https://opencode.ai/zen/go/v1
+base_url = "https://opencode.ai/inference/go/openai/v1"   # OpenCode Go; pay-as-you-go credit: https://opencode.ai/inference/openai/v1
 model = "deepseek-v4.1-flash"
 api_key_env = "OPENCODE_API_KEY"
 temperature = 0.7

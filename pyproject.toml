@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hawthornebench"
-version = "0.4.0"
+version = "0.5.0"
 description = "HAWTHORNEBench: a multi-agent adversarial simulation for measuring the evaluation awareness-performance trade-off"
 readme = "README.md"
 requires-python = ">=3.10"
