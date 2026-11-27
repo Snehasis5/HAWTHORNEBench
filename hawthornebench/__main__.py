@@ -8,6 +8,7 @@
   hawthornebench report runs/my_experiment        rebuild report.md / report.json / report.html from saved traces
   hawthornebench run -c my.toml --live            same, with the 3D viewer and transcript feed following it live
   hawthornebench show runs/my_experiment --seed 0   print an episode as a conversation
+  hawthornebench models opencode [filter]          list models you can pass as --target opencode:<id>
   hawthornebench sweep -c my_sweep.toml           run every combination in [sweep] and compare them
   hawthornebench judge runs/my_experiment -c cfg  label evaluation awareness in saved traces with a judge model
   hawthornebench estimate -c my_experiment.toml   estimate model calls, tokens and cost before running
@@ -174,6 +175,32 @@ def cmd_estimate(a):
 def cmd_bench(a):
     from .bench import run_bench
     run_bench(a)
+
+
+def cmd_models(a):
+    """List the chat models a gateway offers right now, ready to paste as --target <gateway>:<id>."""
+    import urllib.request
+    from .providers.registry import CATALOGS
+    url = CATALOGS[a.gateway]
+    try:
+        with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "hawthornebench"}), timeout=30) as r:
+            data = json.load(r).get("data", [])
+    except Exception as e:
+        sys.exit(f"could not fetch {url}: {e}")
+    rows = []
+    for m in data:
+        if m.get("type", "chat") not in ("chat", None) or any(k in m["id"] for k in ("embed", "image", "transcribe", "voice", "video", "bge-", "voyage", "jev-", "-decision", "-live-")):
+            continue
+        if a.filter and a.filter.lower() not in m["id"].lower():
+            continue
+        p = m.get("pricing") or {}
+        price = f"${float(p['prompt']) * 1e6:.2f}/${float(p['completion']) * 1e6:.2f}" if p.get("prompt") not in (None, "") else ""
+        reasoning = ((m.get("capabilities") or {}).get("reasoning") or {}).get("supported")
+        rows.append((m["id"], m.get("name", ""), "yes" if reasoning else "", price))
+    print(f"{'--target':<52} {'name':<32} {'reasons':<8} price in/out per M")
+    for i, n, r, pr in sorted(rows):
+        print(f"{a.gateway + ':' + i:<52} {n[:31]:<32} {r:<8} {pr}")
+    print(f"\n{len(rows)} chat models. Free models (-free) work only inside the OpenCode app, not through the API." if a.gateway.startswith("opencode") else f"\n{len(rows)} chat models.")
 
 
 def cmd_show(a):
@@ -347,6 +374,9 @@ def main(argv=None):
     p = sub.add_parser("estimate", help="estimate calls, tokens and cost"); p.add_argument("-c", "--config", help="config path or packaged name (default: quickstart)")
     p.add_argument("--seeds", type=int); p.add_argument("--out"); p.set_defaults(fn=cmd_estimate)
     _agent_flags(p)
+    p = sub.add_parser("models", help="list the chat models a gateway offers (opencode, opencode-go, openrouter)")
+    p.add_argument("gateway", choices=["opencode", "opencode-go", "openrouter"]); p.add_argument("filter", nargs="?")
+    p.set_defaults(fn=cmd_models)
     p = sub.add_parser("show", help="print an episode as a readable conversation"); p.add_argument("path")
     p.add_argument("--seed", type=int, default=0); p.add_argument("--condition", default="evaluation")
     p.add_argument("--start", type=int, default=0); p.add_argument("--rounds", type=int, default=12); p.set_defaults(fn=cmd_show)

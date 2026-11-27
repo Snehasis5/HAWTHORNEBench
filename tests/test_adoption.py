@@ -143,3 +143,11 @@ def test_large_swarm_roster_and_opencode_preset():
     s = spec_from_string("opencode:deepseek-v4.1-flash")
     assert (s.base_url, s.api_key_env) == ("https://opencode.ai/zen/v1", "OPENCODE_API_KEY")
     assert load_experiment("pilot_deepseek").red[0]["kind"] == "scripted"
+
+
+def test_any_opencode_model_via_target_override():
+    for mid in ("deepseek-v4.1-flash", "claude-haiku-5-5", "gpt-5.4-nano", "glm-5.3", "some-future-model"):
+        e = load_experiment("pilot_deepseek").override(target=f"opencode:{mid}")
+        m = e.models[e.target["model"]]
+        assert (m.model, m.base_url, m.api_key_env, m.max_tokens) == (mid, "https://opencode.ai/zen/v1", "OPENCODE_API_KEY", 2000)
+    assert spec_from_string("opencode:x?max_tokens=500").max_tokens == 500     # explicit options win over preset defaults

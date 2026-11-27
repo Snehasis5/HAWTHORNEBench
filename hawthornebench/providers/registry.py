@@ -40,6 +40,12 @@ PRESETS = {
     "vllm": ("openai_compatible", "http://localhost:8000/v1", None),
     "openai_compatible": ("openai_compatible", None, "OPENAI_API_KEY"),
 }
+# defaults for gateways that serve many reasoning models (they think before answering, so they need room)
+PRESET_DEFAULTS = {"opencode": {"max_tokens": 2000, "timeout_s": 120}, "opencode-go": {"max_tokens": 2000, "timeout_s": 120},
+                   "openrouter": {"max_tokens": 1500, "timeout_s": 120}}
+# where each gateway lists its models (for `hawthornebench models <gateway>`)
+CATALOGS = {"opencode": "https://opencode.ai/zen/v1/models", "opencode-go": "https://opencode.ai/zen/go/v1/models",
+            "openrouter": "https://openrouter.ai/api/v1/models"}
 NUMERIC = {"temperature": float, "max_tokens": int, "timeout_s": float, "max_retries": int,
            "price_input_per_mtok": float, "price_output_per_mtok": float}
 
@@ -69,6 +75,7 @@ def spec_from_string(s: str, name: str | None = None) -> ModelSpec:
     kw = {"name": name or f"{preset}:{model}", "provider": provider, "model": model, "base_url": base_url, "api_key_env": key_env}
     if preset == "openrouter":
         kw["headers"] = {"X-Title": "HAWTHORNEBench"}
+    kw.update(PRESET_DEFAULTS.get(preset, {}))
     for k, v in query.items():
         if k in NUMERIC:
             kw[k] = NUMERIC[k](v)
